@@ -53,3 +53,10 @@ npm-dev:
 npm-build:
 	$(SAIL) npm run build
 
+# Generate Swagger/OpenAPI docs
+swagger:
+	$(SAIL) artisan l5-swagger:generate
+
+# Clean generated Swagger files
+swagger-clean:
+	$(SAIL) artisan l5-swagger:clean
