@@ -8,18 +8,19 @@ export default defineConfig({
             input: ["resources/css/app.css", "resources/js/app.js"],
             refresh: true,
         }),
-        vue({
-            template: {
-                transformAssetUrls: {
-                    base: null,
-                    includeAbsolute: false,
-                },
-            },
-        }),
+        vue(),
     ],
     resolve: {
         alias: {
             "@": "/resources/js",
+        },
+    },
+    server: {
+        host: "0.0.0.0",        // container binding
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            host: "localhost", // 🔴 browser-facing host
         },
     },
 });
