@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('transaction_items', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('transaction_id')->constrained()->onDelete('cascade');
-            $table->foreignId('pos_item_id')->constrained()->onDelete('cascade');
-            $table->integer('quantity');
+            $table->foreignId('transaction_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('pos_item_id')->constrained()->restrictOnDelete();
+            $table->unsignedInteger('quantity');
             $table->decimal('price', 10, 2); // Price at time of sale
             $table->decimal('subtotal', 10, 2); // quantity * price
             $table->decimal('discount', 10, 2)->default(0);
@@ -23,8 +23,8 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes
-            $table->index('transaction_id');
-            $table->index('pos_item_id');
+            $table->index(['transaction_id', 'pos_item_id']);
+            $table->unique(['transaction_id', 'pos_item_id']);
         });
     }
 

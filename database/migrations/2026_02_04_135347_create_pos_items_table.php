@@ -19,23 +19,23 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->decimal('cost', 10, 2)->nullable();
             $table->string('category');
-            $table->integer('stock')->default(0);
-            $table->integer('min_stock')->default(0); 
+            $table->unsignedInteger('stock')->default(0);
+            $table->unsignedInteger('min_stock')->default(0);
             $table->string('image')->nullable();
             $table->string('barcode')->nullable()->unique();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_taxable')->default(true);
-            $table->decimal('tax_rate', 5, 2)->default(10.00); 
-            $table->string('unit')->default('pcs'); 
-            $table->json('metadata')->nullable(); 
+            $table->decimal('tax_rate', 5, 2)->default(10.00);
+            $table->string('unit')->default('pcs');
+            $table->json('metadata')->nullable();
             $table->timestamps();
-            $table->softDeletes(); 
+            $table->softDeletes();
 
             // Indexes for better query performance
             $table->index('category');
-            $table->index('sku');
             $table->index('barcode');
             $table->index('is_active');
+            $table->index(['is_active', 'category']);
         });
     }
 

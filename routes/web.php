@@ -1,10 +1,8 @@
 <?php
 
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Application;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PosItemController;
 
 // Public routes
 Route::get('/', function () {
@@ -31,13 +29,13 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     // POS Dashboard
-    Route::get('/pos/dashboard', [POSController::class, 'dashboard'])->name('pos.dashboard');
+    Route::get('/pos/dashboard', [PosItemController::class, 'dashboard'])->name('pos.dashboard');
 
     // POS API endpoints
     Route::prefix('pos')->name('pos.')->group(function () {
-        Route::get('/products', [POSController::class, 'getProducts'])->name('products.index');
-        Route::get('/products/{id}', [POSController::class, 'getProduct'])->name('products.show');
-        Route::post('/checkout', [POSController::class, 'checkout'])->name('checkout');
+        Route::get('/products', [PosItemController::class, 'getProducts'])->name('products.index');
+        Route::get('/products/{id}', [PosItemController::class, 'getProduct'])->name('products.show');
+        Route::post('/checkout', [PosItemController::class, 'checkout'])->name('checkout');
     });
 });
 

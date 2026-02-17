@@ -13,20 +13,19 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->decimal('subtotal', 10, 2);
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('discount', 10, 2)->default(0);
             $table->decimal('total', 10, 2);
             $table->string('payment_method')->default('cash'); // cash, card, mobile, etc.
             $table->string('status')->default('completed'); // completed, pending, cancelled, refunded
-            $table->string('receipt_number')->unique()->nullable();
+            $table->string('receipt_number')->unique();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
             // Indexes
-            $table->index('user_id');
             $table->index('status');
             $table->index('payment_method');
             $table->index('created_at');
