@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PosItem;
+use App\Models\PosCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,10 +20,20 @@ class PosItemController extends Controller
     {
         $categories = PosItem::query()
             ->where('is_active', true)
-            ->select('category')
+            ->whereNotNull('category')
             ->distinct()
-            ->orderBy('category')
-            ->pluck('category')
+            ->pluck('category');
+
+        $managedCategories = PosCategory::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->pluck('name');
+
+        $categories = $managedCategories
+            ->merge($categories)
+            ->unique()
+            ->sort()
             ->prepend('All')
             ->values();
 
