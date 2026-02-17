@@ -1,11 +1,6 @@
-<script setup>
+﻿<script setup>
 import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
-import { computed } from "vue";
-import { Navigation, Footer } from "@/Components/Home";
-import Checkbox from "@/Components/Checkbox.vue";
-import InputError from "@/Components/InputError.vue";
-import InputLabel from "@/Components/InputLabel.vue";
-import TextInput from "@/Components/TextInput.vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
     canResetPassword: Boolean,
@@ -13,7 +8,8 @@ const props = defineProps({
 });
 
 const page = usePage();
-const appName = computed(() => page.props.appName || "Laravel");
+const appName = computed(() => page.props.appName || "POS Management");
+const showPassword = ref(false);
 
 const form = useForm({
     email: "",
@@ -29,194 +25,143 @@ const submit = () => {
         onFinish: () => form.reset("password"),
     });
 };
-
-const scrollToSection = (sectionId) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-    }
-};
 </script>
 
 <template>
     <Head title="Sign In" />
 
-    <div class="min-h-screen bg-white dark:bg-gray-900">
-        <!-- Navigation -->
-        <Navigation
-            :can-login="false"
-            :can-register="true"
-            :hide-main-links="true"
-            @scroll-to-section="scrollToSection"
-        />
+    <div
+        class="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900"
+    >
+        <div
+            class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.16),transparent_45%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.14),transparent_40%),linear-gradient(to_bottom,rgba(248,250,252,1),rgba(241,245,249,1))]"
+        ></div>
 
-        <!-- Main Content -->
-        <main class="pt-20 pb-12">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="max-w-md mx-auto">
-                    <!-- Logo and Title -->
-                    <div class="text-center mb-8">
-                        <div class="flex justify-center mb-6">
-                            <div
-                                class="w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg"
-                            >
-                                <div class="text-white text-2xl font-bold">
-                                    {{ appName.charAt(0) }}
-                                </div>
-                            </div>
+        <div class="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
+            <div class="grid w-full gap-8 lg:grid-cols-2">
+                <section class="hidden rounded-3xl bg-slate-900 p-8 text-slate-100 shadow-2xl lg:flex lg:flex-col lg:justify-between">
+                    <div>
+                        <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-200">
+                            Retail Console
                         </div>
-
-                        <h1
-                            class="text-3xl font-bold text-gray-900 dark:text-white mb-2"
-                        >
-                            SIGN IN
+                        <h1 class="mt-6 text-4xl font-semibold leading-tight">
+                            Sell faster with a cleaner POS workflow.
                         </h1>
-                        <p class="text-gray-600 dark:text-gray-300">
-                            Welcome back to {{ appName }}! Please enter your
-                            credentials
+                        <p class="mt-4 max-w-md text-sm text-slate-300">
+                            Access inventory, checkout, and customer-facing operations from one modern dashboard.
+                        </p>
+                    </div>
+                    <div class="grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
+                        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p class="text-2xl font-semibold">24/7</p>
+                            <p class="mt-1 text-slate-300">Transaction access</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                            <p class="text-2xl font-semibold">Realtime</p>
+                            <p class="mt-1 text-slate-300">Product visibility</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
+                    <div class="mb-6">
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                            {{ appName }}
+                        </p>
+                        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+                            Sign in
+                        </h2>
+                        <p class="mt-2 text-sm text-slate-600">
+                            Enter your credentials to open the POS dashboard.
                         </p>
                     </div>
 
-                    <!-- Status Message -->
                     <div
                         v-if="status"
-                        class="mb-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-green-700 dark:text-green-400 text-sm text-center"
+                        class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
                     >
                         {{ status }}
                     </div>
 
-                    <!-- Form -->
-                    <div
-                        class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700"
-                    >
-                        <form @submit.prevent="submit" class="space-y-6">
-                            <!-- Email Input -->
-                            <div>
-                                <InputLabel
-                                    for="email"
-                                    value="Email Address"
-                                    class="text-gray-700 dark:text-gray-300 font-medium mb-2"
-                                />
-                                <TextInput
-                                    id="email"
-                                    v-model="form.email"
-                                    type="email"
-                                    class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 py-3 px-4"
-                                    required
-                                    autofocus
-                                    autocomplete="username"
-                                    placeholder="Enter your email"
-                                />
-                                <InputError
-                                    class="mt-2"
-                                    :message="form.errors.email"
-                                />
-                            </div>
+                    <form @submit.prevent="submit" class="space-y-5">
+                        <div>
+                            <label for="email" class="mb-2 block text-sm font-medium text-slate-700">Email</label>
+                            <input
+                                id="email"
+                                v-model="form.email"
+                                type="email"
+                                required
+                                autofocus
+                                autocomplete="username"
+                                placeholder="name@company.com"
+                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                            />
+                            <p v-if="form.errors.email" class="mt-2 text-sm text-rose-600">
+                                {{ form.errors.email }}
+                            </p>
+                        </div>
 
-                            <!-- Password Input -->
-                            <div>
-                                <div
-                                    class="flex items-center justify-between mb-2"
+                        <div>
+                            <div class="mb-2 flex items-center justify-between">
+                                <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+                                <Link
+                                    v-if="canResetPassword"
+                                    :href="route('password.request')"
+                                    class="text-sm font-medium text-sky-700 hover:text-sky-800"
                                 >
-                                    <InputLabel
-                                        for="password"
-                                        value="Password"
-                                        class="text-gray-700 dark:text-gray-300 font-medium"
-                                    />
-                                    <Link
-                                        v-if="canResetPassword"
-                                        :href="route('password.request')"
-                                        class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium"
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                                <TextInput
+                                    Forgot password?
+                                </Link>
+                            </div>
+                            <div class="relative">
+                                <input
                                     id="password"
                                     v-model="form.password"
-                                    type="password"
-                                    class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 py-3 px-4"
+                                    :type="showPassword ? 'text' : 'password'"
                                     required
                                     autocomplete="current-password"
                                     placeholder="Enter your password"
+                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                                 />
-                                <InputError
-                                    class="mt-2"
-                                    :message="form.errors.password"
-                                />
-                            </div>
-
-                            <!-- Remember Me Checkbox -->
-                            <div class="flex items-center">
-                                <Checkbox
-                                    v-model:checked="form.remember"
-                                    name="remember"
-                                    class="text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 dark:focus:ring-indigo-400 border-gray-300 dark:border-gray-600"
-                                />
-                                <span
-                                    class="ms-3 text-sm text-gray-600 dark:text-gray-300"
-                                    >Keep me signed in</span
-                                >
-                            </div>
-
-                            <!-- Submit Button -->
-                            <div class="mt-8">
                                 <button
-                                    type="submit"
-                                    :disabled="form.processing"
-                                    class="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg"
+                                    type="button"
+                                    @click="showPassword = !showPassword"
+                                    class="absolute inset-y-0 right-0 inline-flex items-center px-3 text-slate-500 hover:text-slate-700"
                                 >
-                                    <span
-                                        v-if="form.processing"
-                                        class="flex items-center justify-center"
-                                    >
-                                        <svg
-                                            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                class="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                stroke-width="4"
-                                            ></circle>
-                                            <path
-                                                class="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                            ></path>
-                                        </svg>
-                                        Signing in...
-                                    </span>
-                                    <span v-else class="text-lg">Sign In</span>
+                                    {{ showPassword ? "Hide" : "Show" }}
                                 </button>
                             </div>
+                            <p v-if="form.errors.password" class="mt-2 text-sm text-rose-600">
+                                {{ form.errors.password }}
+                            </p>
+                        </div>
 
-                            <!-- Register Link -->
-                            <div
-                                class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-center"
-                            >
-                                <p class="text-gray-600 dark:text-gray-300">
-                                    Don't have an account?
-                                    <Link
-                                        :href="route('register')"
-                                        class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-semibold ml-1"
-                                    >
-                                        Register now
-                                    </Link>
-                                </p>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                        <label class="flex items-center gap-3 text-sm text-slate-600">
+                            <input
+                                v-model="form.remember"
+                                type="checkbox"
+                                class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                            />
+                            Keep me signed in
+                        </label>
+
+                        <button
+                            type="submit"
+                            :disabled="form.processing"
+                            class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <span v-if="form.processing">Signing in...</span>
+                            <span v-else>Sign In</span>
+                        </button>
+                    </form>
+
+                    <p class="mt-6 text-center text-sm text-slate-600">
+                        New to the platform?
+                        <Link :href="route('register')" class="font-semibold text-sky-700 hover:text-sky-800">
+                            Create an account
+                        </Link>
+                    </p>
+                </section>
             </div>
-        </main>
-
-        <!-- Footer -->
-        <Footer :app-name="appName" />
+        </div>
     </div>
 </template>

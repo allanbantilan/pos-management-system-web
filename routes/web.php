@@ -4,24 +4,44 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\AuthController;
 
+// Public routes
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('login');
 });
 
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+// Guest routes (not authenticated)
+Route::middleware('guest')->group(function () {
+    // Login
+    Route::get('login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('login', [AuthController::class, 'login']);
+
+    // Register
+    Route::get('register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('register', [AuthController::class, 'register']);
+
+    // Password Reset
+    Route::get('forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
 });
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+// Authenticated routes
+Route::middleware('auth')->group(function () {
+    // Logout
+    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+
+    // POS Dashboard
+    Route::get('/pos/dashboard', [POSController::class, 'dashboard'])->name('pos.dashboard');
+
+    // POS API endpoints
+    Route::prefix('pos')->name('pos.')->group(function () {
+        Route::get('/products', [POSController::class, 'getProducts'])->name('products.index');
+        Route::get('/products/{id}', [POSController::class, 'getProduct'])->name('products.show');
+        Route::post('/checkout', [POSController::class, 'checkout'])->name('checkout');
+    });
+});
+
+// API routes for AJAX calls
+Route::middleware(['auth'])->prefix('api')->group(function () {
+    // Additional API endpoints can be added here
+});
