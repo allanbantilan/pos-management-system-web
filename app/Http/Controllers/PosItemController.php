@@ -19,8 +19,12 @@ class PosItemController extends Controller
     /**
      * Display the POS dashboard.
      */
-    public function dashboard(): Response
+    public function dashboard(Request $request): Response
     {
+        $search = trim((string) $request->input('search', ''));
+        $category = (string) $request->input('category', 'All');
+        $perPage = 6;
+
         $categories = PosItem::query()
             ->where('is_active', true)
             ->whereNotNull('category')
@@ -40,20 +44,47 @@ class PosItemController extends Controller
             ->prepend('All')
             ->values();
 
-        $items = PosItem::query()
-            ->where('is_active', true)
+        $itemsQuery = PosItem::query()
+            ->where('is_active', true);
+
+        if ($category !== 'All' && $category !== '') {
+            $itemsQuery->where('category', $category);
+        }
+
+        if ($search !== '') {
+            $itemsQuery->where(function ($builder) use ($search) {
+                $builder->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('sku', 'like', '%' . $search . '%')
+                    ->orWhere('barcode', 'like', '%' . $search . '%');
+            });
+        }
+
+        $items = $itemsQuery
             ->with('media')
             ->orderBy('name')
-            ->get(['id', 'name', 'price', 'category', 'stock', 'image', 'sku'])
-            ->map(function (PosItem $item) {
+            ->paginate($perPage)
+            ->withQueryString()
+            ->through(function (PosItem $item) {
                 $item->image = $this->resolveItemImage($item);
 
-                return $item;
+                return $item->only([
+                    'id',
+                    'name',
+                    'price',
+                    'category',
+                    'stock',
+                    'image',
+                    'sku',
+                ]);
             });
 
         return Inertia::render('PosDashboard', [
             'categories' => $categories,
             'items' => $items,
+            'filters' => [
+                'search' => $search,
+                'category' => $category,
+            ],
         ]);
     }
 

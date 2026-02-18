@@ -1,6 +1,6 @@
 <script setup>
-import { Head, Link } from "@inertiajs/vue3";
-import { computed, ref } from "vue";
+import { Head, Link, router } from "@inertiajs/vue3";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
 const props = defineProps({
@@ -10,15 +10,28 @@ const props = defineProps({
         default: () => [],
     },
     items: {
-        type: Array,
-        default: () => [],
+        type: Object,
+        default: () => ({
+            data: [],
+            current_page: 1,
+            last_page: 1,
+            total: 0,
+        }),
+    },
+    filters: {
+        type: Object,
+        default: () => ({
+            search: "",
+            category: "All",
+        }),
     },
 });
 
-const selectedCategory = ref("All");
-const searchQuery = ref("");
+const selectedCategory = ref(props.filters?.category || "All");
+const searchQuery = ref(props.filters?.search || "");
 const cart = ref([]);
 const showCart = ref(false);
+let searchDebounceTimer = null;
 const toNumber = (value) => {
     const parsed = Number(value);
 
@@ -35,21 +48,56 @@ const currentUser = computed(() => ({
     email: props.auth?.user?.email ?? "",
 }));
 
-const filteredItems = computed(() => {
-    let filtered = props.items;
+const paginatedItems = computed(() => props.items?.data ?? []);
+const currentPage = computed(() => props.items?.current_page ?? 1);
+const totalPages = computed(() => props.items?.last_page ?? 1);
 
-    if (selectedCategory.value !== "All") {
-        filtered = filtered.filter((p) => p.category === selectedCategory.value);
-    }
+const fetchItems = (page = 1, replace = false) => {
+    router.get(
+        route("pos.dashboard"),
+        {
+            page,
+            search: searchQuery.value || undefined,
+            category:
+                selectedCategory.value && selectedCategory.value !== "All"
+                    ? selectedCategory.value
+                    : undefined,
+        },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace,
+        },
+    );
+};
 
-    if (searchQuery.value) {
-        filtered = filtered.filter((p) =>
-            p.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
-        );
-    }
-
-    return filtered;
+watch(selectedCategory, () => {
+    fetchItems(1, true);
 });
+
+watch(searchQuery, () => {
+    if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+    }
+
+    searchDebounceTimer = setTimeout(() => {
+        fetchItems(1, true);
+    }, 250);
+});
+
+onBeforeUnmount(() => {
+    if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+    }
+});
+
+const goToPage = (page) => {
+    if (page < 1 || page > totalPages.value || page === currentPage.value) {
+        return;
+    }
+
+    fetchItems(page);
+};
 
 const cartTotal = computed(() =>
     cart.value.reduce(
@@ -198,9 +246,12 @@ const processCheckout = () => {
             </header>
 
             <main class="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <section class="grid gap-6 lg:grid-cols-[220px,1fr]">
-                    <aside class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
-                        <div class="grid gap-2">
+                <section class="grid items-start gap-6 lg:grid-cols-[220px,1fr]">
+                    <aside class="flex h-[280px] flex-col rounded-2xl border border-amber-200 bg-white p-4 shadow-sm sm:h-[320px] lg:h-[360px]">
+                        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                            Categories
+                        </h3>
+                        <div class="hide-scrollbar flex-1 space-y-2 overflow-y-auto pr-1">
                             <button
                                 v-for="category in categories"
                                 :key="category"
@@ -223,9 +274,9 @@ const processCheckout = () => {
                                 {{ selectedCategory === "All" ? "Menu" : selectedCategory }}
                             </h2>
                         </div>
-                        <div v-if="filteredItems.length > 0" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                        <div v-if="paginatedItems.length > 0" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                             <article
-                                v-for="item in filteredItems"
+                                v-for="item in paginatedItems"
                                 :key="item.id"
                                 class="group overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                             >
@@ -265,7 +316,27 @@ const processCheckout = () => {
                             </article>
                         </div>
 
-                        <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+                        <div v-if="paginatedItems.length > 0 && totalPages > 1" class="mt-6 flex items-center justify-center gap-3">
+                            <button
+                                @click="goToPage(currentPage - 1)"
+                                :disabled="currentPage === 1"
+                                class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            <span class="text-sm font-semibold text-slate-700">
+                                Page {{ currentPage }} of {{ totalPages }}
+                            </span>
+                            <button
+                                @click="goToPage(currentPage + 1)"
+                                :disabled="currentPage === totalPages"
+                                class="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+
+                        <div v-if="paginatedItems.length === 0" class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
                             <h3 class="text-lg font-semibold text-slate-700">No matching items</h3>
                         </div>
                     </section>
@@ -392,3 +463,14 @@ const processCheckout = () => {
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+</style>
