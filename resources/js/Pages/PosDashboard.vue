@@ -1,5 +1,5 @@
-﻿<script setup>
-import { Head } from "@inertiajs/vue3";
+<script setup>
+import { Head, Link } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
@@ -24,7 +24,16 @@ const toNumber = (value) => {
 
     return Number.isFinite(parsed) ? parsed : 0;
 };
-const formatMoney = (value) => toNumber(value).toFixed(2);
+const pesoFormatter = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+});
+const formatMoney = (value) => pesoFormatter.format(toNumber(value));
+const currentUser = computed(() => ({
+    name: props.auth?.user?.name ?? "Cashier",
+    email: props.auth?.user?.email ?? "",
+}));
 
 const filteredItems = computed(() => {
     let filtered = props.items;
@@ -91,7 +100,7 @@ const clearCart = () => {
 };
 
 const processCheckout = () => {
-    alert(`Processing payment of $${formatMoney(grandTotal.value)}`);
+    alert(`Processing payment of ${formatMoney(grandTotal.value)}`);
     clearCart();
     showCart.value = false;
 };
@@ -133,6 +142,11 @@ const processCheckout = () => {
                         </div>
                     </div>
 
+                    <div class="inline-flex items-center rounded-xl border border-amber-200 bg-white px-4 py-2.5 text-sm">
+                        <span class="text-slate-500">Total</span>
+                        <span class="ml-2 font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
+                    </div>
+
                     <button
                         @click="showCart = true"
                         class="relative inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-500"
@@ -142,22 +156,49 @@ const processCheckout = () => {
                             {{ cartItemCount }}
                         </span>
                     </button>
+
+                    <details class="relative">
+                        <summary
+                            class="list-none cursor-pointer rounded-xl border border-amber-200 bg-white p-2.5 text-slate-800 transition hover:bg-amber-100"
+                        >
+                            <span class="inline-flex h-6 w-6 items-center justify-center">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                    class="h-5 w-5"
+                                >
+                                    <circle cx="12" cy="8" r="4"></circle>
+                                    <path d="M4 20c1.6-3.6 4.5-5.5 8-5.5s6.4 1.9 8 5.5"></path>
+                                </svg>
+                            </span>
+                        </summary>
+                        <div class="absolute right-0 z-40 mt-2 w-64 rounded-xl border border-amber-200 bg-white p-2 shadow-lg">
+                            <div class="rounded-lg bg-amber-50 px-3 py-2">
+                                <p class="truncate text-sm font-semibold text-slate-900">
+                                    {{ currentUser.name }}
+                                </p>
+                                <p class="truncate text-xs text-slate-600">
+                                    {{ currentUser.email }}
+                                </p>
+                            </div>
+                            <Link
+                                :href="route('logout')"
+                                method="post"
+                                as="button"
+                                class="mt-2 w-full rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                            >
+                                Logout
+                            </Link>
+                        </div>
+                    </details>
                 </div>
             </header>
 
             <main class="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <section class="grid gap-4 sm:grid-cols-2">
-                    <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p class="text-sm text-slate-500">Items in cart</p>
-                        <p class="mt-1 text-2xl font-semibold">{{ cartItemCount }}</p>
-                    </article>
-                    <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p class="text-sm text-slate-500">Current total</p>
-                        <p class="mt-1 text-2xl font-semibold">${{ formatMoney(grandTotal) }}</p>
-                    </article>
-                </section>
-
-                <section class="mt-6 grid gap-6 lg:grid-cols-[220px,1fr]">
+                <section class="grid gap-6 lg:grid-cols-[220px,1fr]">
                     <aside class="rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
                         <div class="grid gap-2">
                             <button
@@ -211,7 +252,7 @@ const processCheckout = () => {
 
                                     <div class="flex items-center justify-between">
                                         <p class="text-lg font-semibold text-slate-900">
-                                            ${{ formatMoney(item.price) }}
+                                            {{ formatMoney(item.price) }}
                                         </p>
                                         <button
                                             @click="addToCart(item)"
@@ -287,7 +328,7 @@ const processCheckout = () => {
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <h3 class="text-sm font-semibold text-slate-900">{{ item.name }}</h3>
-                                    <p class="mt-1 text-xs text-slate-500">${{ formatMoney(item.price) }} each</p>
+                                    <p class="mt-1 text-xs text-slate-500">{{ formatMoney(item.price) }} each</p>
                                 </div>
                                 <button
                                     @click="removeFromCart(item.id)"
@@ -315,7 +356,7 @@ const processCheckout = () => {
                                 </div>
 
                                 <p class="text-sm font-semibold text-slate-900">
-                                    ${{ formatMoney(toNumber(item.price) * item.quantity) }}
+                                    {{ formatMoney(toNumber(item.price) * item.quantity) }}
                                 </p>
                             </div>
                         </article>
@@ -325,11 +366,11 @@ const processCheckout = () => {
                         <div class="space-y-1.5 text-sm">
                             <div class="flex items-center justify-between text-slate-600">
                                 <span>Subtotal</span>
-                                <span>${{ formatMoney(cartTotal) }}</span>
+                                <span>{{ formatMoney(cartTotal) }}</span>
                             </div>
                             <div class="flex items-center justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-900">
                                 <span>Total</span>
-                                <span>${{ formatMoney(grandTotal) }}</span>
+                                <span>{{ formatMoney(grandTotal) }}</span>
                             </div>
                         </div>
 

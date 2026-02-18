@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 
@@ -27,17 +27,17 @@ const submit = () => {
     <Head title="Register" />
 
     <div
-        class="relative min-h-screen overflow-hidden bg-slate-100 text-slate-900"
+        class="relative min-h-screen overflow-hidden bg-amber-50 text-slate-900"
     >
         <div
-            class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(14,165,233,0.16),transparent_45%),radial-gradient(circle_at_85%_20%,rgba(16,185,129,0.14),transparent_40%),linear-gradient(to_bottom,rgba(248,250,252,1),rgba(241,245,249,1))]"
+            class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(249,115,22,0.16),transparent_40%),radial-gradient(circle_at_85%_5%,rgba(234,179,8,0.16),transparent_35%),linear-gradient(to_bottom,rgba(255,251,235,1),rgba(254,243,199,0.5))]"
         ></div>
 
         <div class="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
             <div class="grid w-full gap-8 lg:grid-cols-2">
-                <section class="hidden rounded-3xl bg-slate-900 p-8 text-slate-100 shadow-2xl lg:flex lg:flex-col lg:justify-between">
+                <section class="hidden rounded-3xl bg-orange-700 p-8 text-amber-50 shadow-2xl lg:flex lg:flex-col lg:justify-between">
                     <div>
-                        <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-200">
+                        <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">
                             Team Onboarding
                         </div>
                         <h1 class="mt-6 text-4xl font-semibold leading-tight">
@@ -77,7 +77,7 @@ const submit = () => {
                                 autofocus
                                 autocomplete="name"
                                 placeholder="Alex Carter"
-                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                             />
                             <p v-if="form.errors.name" class="mt-2 text-sm text-rose-600">
                                 {{ form.errors.name }}
@@ -93,7 +93,7 @@ const submit = () => {
                                 required
                                 autocomplete="username"
                                 placeholder="name@company.com"
-                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                             />
                             <p v-if="form.errors.email" class="mt-2 text-sm text-rose-600">
                                 {{ form.errors.email }}
@@ -110,7 +110,7 @@ const submit = () => {
                                     required
                                     autocomplete="new-password"
                                     placeholder="Minimum 8 characters"
-                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                                 />
                                 <button
                                     type="button"
@@ -135,7 +135,7 @@ const submit = () => {
                                     required
                                     autocomplete="new-password"
                                     placeholder="Re-enter password"
-                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                                 />
                                 <button
                                     type="button"
@@ -156,7 +156,7 @@ const submit = () => {
                                 v-model="form.terms"
                                 type="checkbox"
                                 required
-                                class="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                                class="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
                             />
                             <span>
                                 I agree to the Terms of Service and Privacy Policy.
@@ -169,7 +169,7 @@ const submit = () => {
                         <button
                             type="submit"
                             :disabled="form.processing"
-                            class="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-orange-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <span v-if="form.processing">Creating account...</span>
                             <span v-else>Create account</span>
@@ -178,7 +178,7 @@ const submit = () => {
 
                     <p class="mt-6 text-center text-sm text-slate-600">
                         Already have an account?
-                        <Link :href="route('login')" class="font-semibold text-sky-700 hover:text-sky-800">
+                        <Link :href="route('login')" class="font-semibold text-orange-700 hover:text-orange-800">
                             Sign in
                         </Link>
                     </p>

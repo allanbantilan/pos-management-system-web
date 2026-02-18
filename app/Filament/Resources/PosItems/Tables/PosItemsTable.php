@@ -29,7 +29,7 @@ class PosItemsTable
                     ->badge()
                     ->sortable(),
                 TextColumn::make('price')
-                    ->money('USD')
+                    ->money('PHP')
                     ->sortable(),
                 TextColumn::make('stock')
                     ->numeric()
