@@ -19,11 +19,11 @@ class PosCategoryResource extends Resource
 {
     protected static ?string $model = PosCategory::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
     protected static ?string $navigationLabel = 'Categories';
     protected static ?string $modelLabel = 'Category';
     protected static ?string $pluralModelLabel = 'Categories';
-    protected static UnitEnum|string|null $navigationGroup = 'Catalog';
+    protected static UnitEnum|string|null $navigationGroup = 'POS Management';
     protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema

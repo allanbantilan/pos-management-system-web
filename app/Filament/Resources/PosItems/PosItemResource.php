@@ -21,11 +21,11 @@ class PosItemResource extends Resource
 {
     protected static ?string $model = PosItem::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
     protected static ?string $navigationLabel = 'Items';
     protected static ?string $modelLabel = 'Item';
     protected static ?string $pluralModelLabel = 'Items';
-    protected static UnitEnum|string|null $navigationGroup = 'Catalog';
+    protected static UnitEnum|string|null $navigationGroup = 'POS Management';
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema

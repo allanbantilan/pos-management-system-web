@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PosCategories\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
@@ -26,15 +27,13 @@ class PosCategoriesTable
                 IconColumn::make('is_active')
                     ->boolean()
                     ->sortable(),
-                TextColumn::make('updated_at')
-                    ->since()
-                    ->sortable(),
             ])
             ->filters([
                 //
             ])
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

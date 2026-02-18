@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PosItems\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
@@ -37,9 +38,6 @@ class PosItemsTable
                 IconColumn::make('is_active')
                     ->boolean()
                     ->sortable(),
-                TextColumn::make('updated_at')
-                    ->since()
-                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('category')
@@ -48,6 +46,7 @@ class PosItemsTable
             ])
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
