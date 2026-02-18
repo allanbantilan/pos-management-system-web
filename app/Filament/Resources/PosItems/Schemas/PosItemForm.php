@@ -58,6 +58,7 @@ class PosItemForm
                     ->unique(ignoreRecord: true),
                 SpatieMediaLibraryFileUpload::make('image')
                     ->collection('item-images')
+                    ->disk('public')
                     ->image()
                     ->imageEditor()
                     ->maxFiles(1),
