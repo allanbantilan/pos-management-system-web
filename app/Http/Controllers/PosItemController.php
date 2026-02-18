@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PosCheckoutRequest;
 use App\Models\PosItem;
 use App\Models\PosCategory;
 use Illuminate\Http\JsonResponse;
@@ -51,16 +52,8 @@ class PosItemController extends Controller
     /**
      * Process a checkout/transaction.
      */
-    public function checkout(Request $request): JsonResponse
+    public function checkout(PosCheckoutRequest $request): JsonResponse
     {
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|integer|exists:pos_items,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'payment_method' => 'nullable|string|max:50',
-            'notes' => 'nullable|string|max:1000',
-        ]);
-
         $result = DB::transaction(function () use ($request) {
             $requestedItems = collect($request->input('items'))
                 ->groupBy('id')
