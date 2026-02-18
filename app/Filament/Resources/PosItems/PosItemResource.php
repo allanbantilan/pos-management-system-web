@@ -22,9 +22,9 @@ class PosItemResource extends Resource
     protected static ?string $model = PosItem::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static ?string $navigationLabel = 'Products';
-    protected static ?string $modelLabel = 'Product';
-    protected static ?string $pluralModelLabel = 'Products';
+    protected static ?string $navigationLabel = 'Items';
+    protected static ?string $modelLabel = 'Item';
+    protected static ?string $pluralModelLabel = 'Items';
     protected static UnitEnum|string|null $navigationGroup = 'Catalog';
     protected static ?int $navigationSort = 2;
 

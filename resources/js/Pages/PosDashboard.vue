@@ -17,7 +17,7 @@ const props = defineProps({
             "Toys",
         ],
     },
-    products: {
+    items: {
         type: Array,
         default: () => [
             {
@@ -81,8 +81,8 @@ const currentUser = computed(() =>
     props.auth?.user ?? { name: "Cashier", email: "" },
 );
 
-const filteredProducts = computed(() => {
-    let filtered = props.products;
+const filteredItems = computed(() => {
+    let filtered = props.items;
 
     if (selectedCategory.value !== "All") {
         filtered = filtered.filter((p) => p.category === selectedCategory.value);
@@ -105,17 +105,16 @@ const cartItemCount = computed(() =>
     cart.value.reduce((total, item) => total + item.quantity, 0),
 );
 
-const taxAmount = computed(() => cartTotal.value * 0.1);
-const grandTotal = computed(() => cartTotal.value + taxAmount.value);
+const grandTotal = computed(() => cartTotal.value);
 
-const addToCart = (product) => {
-    const existingItem = cart.value.find((item) => item.id === product.id);
+const addToCart = (itemToAdd) => {
+    const existingItem = cart.value.find((item) => item.id === itemToAdd.id);
 
     if (existingItem) {
         existingItem.quantity++;
     } else {
         cart.value.push({
-            ...product,
+            ...itemToAdd,
             quantity: 1,
         });
     }
@@ -123,12 +122,12 @@ const addToCart = (product) => {
     showCart.value = true;
 };
 
-const removeFromCart = (productId) => {
-    cart.value = cart.value.filter((item) => item.id !== productId);
+const removeFromCart = (itemId) => {
+    cart.value = cart.value.filter((item) => item.id !== itemId);
 };
 
-const updateQuantity = (productId, change) => {
-    const item = cart.value.find((entry) => entry.id === productId);
+const updateQuantity = (itemId, change) => {
+    const item = cart.value.find((entry) => entry.id === itemId);
 
     if (!item) {
         return;
@@ -137,7 +136,7 @@ const updateQuantity = (productId, change) => {
     item.quantity += change;
 
     if (item.quantity <= 0) {
-        removeFromCart(productId);
+        removeFromCart(itemId);
     }
 };
 
@@ -185,7 +184,7 @@ const processCheckout = () => {
                             <input
                                 v-model="searchQuery"
                                 type="text"
-                                placeholder="Find products by name"
+                                placeholder="Find items by name"
                                 class="block w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-20 pr-4 text-sm outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
                             />
                         </div>
@@ -206,8 +205,8 @@ const processCheckout = () => {
             <main class="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <section class="grid gap-4 sm:grid-cols-3">
                     <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p class="text-sm text-slate-500">Products shown</p>
-                        <p class="mt-1 text-2xl font-semibold">{{ filteredProducts.length }}</p>
+                        <p class="text-sm text-slate-500">Items shown</p>
+                        <p class="mt-1 text-2xl font-semibold">{{ filteredItems.length }}</p>
                     </article>
                     <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         <p class="text-sm text-slate-500">Items in cart</p>
@@ -244,44 +243,44 @@ const processCheckout = () => {
                     <section>
                         <div class="mb-4 flex items-center justify-between">
                             <h2 class="text-xl font-semibold tracking-tight">
-                                {{ selectedCategory === "All" ? "All Products" : selectedCategory }}
+                                {{ selectedCategory === "All" ? "All Items" : selectedCategory }}
                             </h2>
-                            <p class="text-sm text-slate-500">{{ filteredProducts.length }} results</p>
+                            <p class="text-sm text-slate-500">{{ filteredItems.length }} results</p>
                         </div>
 
-                        <div v-if="filteredProducts.length > 0" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <div v-if="filteredItems.length > 0" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             <article
-                                v-for="product in filteredProducts"
-                                :key="product.id"
+                                v-for="item in filteredItems"
+                                :key="item.id"
                                 class="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                             >
                                 <div class="relative h-40 overflow-hidden bg-slate-200">
                                     <img
-                                        :src="product.image"
-                                        :alt="product.name"
+                                        :src="item.image"
+                                        :alt="item.name"
                                         class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                                     />
                                     <span
                                         class="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-700"
                                     >
-                                        {{ product.category }}
+                                        {{ item.category }}
                                     </span>
                                 </div>
 
                                 <div class="space-y-3 p-4">
                                     <div>
                                         <h3 class="line-clamp-1 text-base font-semibold text-slate-900">
-                                            {{ product.name }}
+                                            {{ item.name }}
                                         </h3>
-                                        <p class="mt-1 text-sm text-slate-500">Stock: {{ product.stock }}</p>
+                                        <p class="mt-1 text-sm text-slate-500">Stock: {{ item.stock }}</p>
                                     </div>
 
                                     <div class="flex items-center justify-between">
                                         <p class="text-lg font-semibold text-slate-900">
-                                            ${{ product.price.toFixed(2) }}
+                                            ${{ item.price.toFixed(2) }}
                                         </p>
                                         <button
-                                            @click="addToCart(product)"
+                                            @click="addToCart(item)"
                                             class="rounded-lg bg-emerald-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-600"
                                         >
                                             Add
@@ -292,7 +291,7 @@ const processCheckout = () => {
                         </div>
 
                         <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-                            <h3 class="text-lg font-semibold text-slate-700">No matching products</h3>
+                            <h3 class="text-lg font-semibold text-slate-700">No matching items</h3>
                             <p class="mt-2 text-sm text-slate-500">Try another search term or category.</p>
                         </div>
                     </section>
@@ -394,10 +393,6 @@ const processCheckout = () => {
                             <div class="flex items-center justify-between text-slate-600">
                                 <span>Subtotal</span>
                                 <span>${{ cartTotal.toFixed(2) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-slate-600">
-                                <span>Tax (10%)</span>
-                                <span>${{ taxAmount.toFixed(2) }}</span>
                             </div>
                             <div class="flex items-center justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-900">
                                 <span>Total</span>

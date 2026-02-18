@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class PosItem extends Model
+class PosItem extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
 
     /**
      * The table associated with the model.
@@ -34,8 +37,6 @@ class PosItem extends Model
         'image',
         'barcode',
         'is_active',
-        'is_taxable',
-        'tax_rate',
         'unit',
         'metadata',
     ];
@@ -48,11 +49,9 @@ class PosItem extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'cost' => 'decimal:2',
-        'tax_rate' => 'decimal:2',
         'stock' => 'integer',
         'min_stock' => 'integer',
         'is_active' => 'boolean',
-        'is_taxable' => 'boolean',
         'metadata' => 'array',
     ];
 
@@ -64,8 +63,23 @@ class PosItem extends Model
     protected $appends = [
         'is_low_stock',
         'profit_margin',
-        'price_with_tax',
     ];
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('item-images')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+            ->singleFile();
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->width(400)
+            ->height(400)
+            ->sharpen(10)
+            ->nonQueued();
+    }
 
     /**
      * Check if item is low on stock.
@@ -89,20 +103,6 @@ class PosItem extends Model
         }
 
         return round((($this->price - $this->cost) / $this->cost) * 100, 2);
-    }
-
-    /**
-     * Get price including tax.
-     *
-     * @return float
-     */
-    public function getPriceWithTaxAttribute(): float
-    {
-        if (!$this->is_taxable) {
-            return $this->price;
-        }
-
-        return round($this->price * (1 + ($this->tax_rate / 100)), 2);
     }
 
     /**

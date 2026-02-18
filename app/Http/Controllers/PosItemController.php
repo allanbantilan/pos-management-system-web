@@ -8,6 +8,8 @@ use App\Models\PosCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,14 +40,20 @@ class PosItemController extends Controller
             ->prepend('All')
             ->values();
 
-        $products = PosItem::query()
+        $items = PosItem::query()
             ->where('is_active', true)
+            ->with('media')
             ->orderBy('name')
-            ->get(['id', 'name', 'price', 'category', 'stock', 'image', 'sku']);
+            ->get(['id', 'name', 'price', 'category', 'stock', 'image', 'sku'])
+            ->map(function (PosItem $item) {
+                $item->image = $this->resolveItemImage($item);
+
+                return $item;
+            });
 
         return Inertia::render('PosDashboard', [
             'categories' => $categories,
-            'products' => $products,
+            'items' => $items,
         ]);
     }
 
@@ -76,12 +84,11 @@ class PosItemController extends Controller
 
             if ($posItems->count() !== $itemIds->count()) {
                 throw ValidationException::withMessages([
-                    'items' => 'One or more products are unavailable.',
+                    'items' => 'One or more items are unavailable.',
                 ]);
             }
 
             $subtotal = 0.0;
-            $tax = 0.0;
             $transactionItems = [];
             $stockDeductions = [];
 
@@ -97,11 +104,8 @@ class PosItemController extends Controller
 
                 $linePrice = (float) $item->price;
                 $lineSubtotal = $linePrice * $quantity;
-                $lineTaxRate = $item->is_taxable ? (float) $item->tax_rate : 0.0;
-                $lineTax = round($lineSubtotal * ($lineTaxRate / 100), 2);
 
                 $subtotal += $lineSubtotal;
-                $tax += $lineTax;
 
                 $transactionItems[] = [
                     'pos_item_id' => $item->id,
@@ -109,7 +113,7 @@ class PosItemController extends Controller
                     'price' => $linePrice,
                     'subtotal' => $lineSubtotal,
                     'discount' => 0,
-                    'tax' => $lineTax,
+                    'tax' => 0,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -121,7 +125,8 @@ class PosItemController extends Controller
             }
 
             $discount = 0.0;
-            $total = round(($subtotal - $discount) + $tax, 2);
+            $tax = 0.0;
+            $total = round($subtotal - $discount, 2);
             $receiptNumber = 'RCPT-' . now()->format('YmdHis') . '-' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
 
             $transactionId = DB::table('transactions')->insertGetId([
@@ -164,9 +169,9 @@ class PosItemController extends Controller
     }
 
     /**
-     * Get products with optional filtering.
+     * Get items with optional filtering.
      */
-    public function getProducts(Request $request): JsonResponse
+    public function getItems(Request $request): JsonResponse
     {
         $category = $request->input('category');
         $search = $request->input('search');
@@ -185,26 +190,54 @@ class PosItemController extends Controller
             });
         }
 
-        $products = $query
+        $items = $query
+            ->with('media')
             ->orderBy('name')
-            ->get(['id', 'name', 'price', 'category', 'stock', 'image', 'sku', 'barcode']);
+            ->get(['id', 'name', 'price', 'category', 'stock', 'image', 'sku', 'barcode'])
+            ->map(function (PosItem $item) {
+                $item->image = $this->resolveItemImage($item);
+
+                return $item;
+            });
 
         return response()->json([
-            'products' => $products,
+            'items' => $items,
         ]);
     }
 
     /**
-     * Get product by ID.
+     * Get item by ID.
      */
-    public function getProduct(int $id): JsonResponse
+    public function getItem(int $id): JsonResponse
     {
-        $product = PosItem::query()
+        $item = PosItem::query()
             ->where('is_active', true)
+            ->with('media')
             ->findOrFail($id);
 
+        $item->image = $this->resolveItemImage($item);
+
         return response()->json([
-            'product' => $product,
+            'item' => $item,
         ]);
+    }
+
+    private function resolveItemImage(PosItem $item): ?string
+    {
+        if ($item->hasMedia('item-images')) {
+            return $item->getFirstMediaUrl('item-images');
+        }
+
+        $image = $item->image;
+
+        if (blank($image)) {
+            return null;
+        }
+
+        if (Str::startsWith($image, ['http://', 'https://'])) {
+            return $image;
+        }
+
+        return Storage::url($image);
     }
 }

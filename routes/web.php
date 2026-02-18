@@ -33,8 +33,8 @@ Route::middleware('auth')->group(function () {
 
     // POS API endpoints
     Route::prefix('pos')->name('pos.')->group(function () {
-        Route::get('/products', [PosItemController::class, 'getProducts'])->name('products.index');
-        Route::get('/products/{id}', [PosItemController::class, 'getProduct'])->name('products.show');
+        Route::get('/items', [PosItemController::class, 'getItems'])->name('items.index');
+        Route::get('/items/{id}', [PosItemController::class, 'getItem'])->name('items.show');
         Route::post('/checkout', [PosItemController::class, 'checkout'])->name('checkout');
     });
 });

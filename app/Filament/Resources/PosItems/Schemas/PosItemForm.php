@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\PosItems\Schemas;
 
+use App\Enums\ItemUnit;
 use App\Models\PosCategory;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -39,35 +41,29 @@ class PosItemForm
                     ->numeric()
                     ->required()
                     ->minValue(0)
-                    ->default(0),
+                    ->default(0)
+                    ->helperText('Current quantity on hand. This decreases when sales are processed.'),
                 TextInput::make('min_stock')
                     ->numeric()
                     ->required()
                     ->minValue(0)
-                    ->default(0),
-                TextInput::make('unit')
-                    ->default('pcs')
+                    ->default(0)
+                    ->helperText('Low-stock threshold used to flag items that need restocking.'),
+                Select::make('unit')
                     ->required()
-                    ->maxLength(50),
+                    ->options(ItemUnit::options())
+                    ->default(ItemUnit::Piece->value),
                 TextInput::make('barcode')
                     ->maxLength(255)
                     ->unique(ignoreRecord: true),
-                TextInput::make('image')
-                    ->label('Image URL')
-                    ->url()
-                    ->maxLength(1000),
+                SpatieMediaLibraryFileUpload::make('image')
+                    ->collection('item-images')
+                    ->image()
+                    ->imageEditor()
+                    ->maxFiles(1),
                 Toggle::make('is_active')
                     ->default(true)
                     ->required(),
-                Toggle::make('is_taxable')
-                    ->default(true)
-                    ->required(),
-                TextInput::make('tax_rate')
-                    ->numeric()
-                    ->required()
-                    ->minValue(0)
-                    ->maxValue(100)
-                    ->default(10),
                 Textarea::make('description')
                     ->rows(4)
                     ->columnSpanFull(),
