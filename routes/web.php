@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MayaCheckoutController;
+use App\Http\Controllers\PosCheckoutController;
 use App\Http\Controllers\PosItemController;
 
 // Public routes
@@ -9,7 +11,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/pos/checkout/callback/{transaction}/{result}', [PosItemController::class, 'mayaCallback'])
+Route::get('/pos/checkout/callback/{transaction}/{result}', [MayaCheckoutController::class, 'callback'])
     ->whereIn('result', ['success', 'failed', 'cancelled'])
     ->name('pos.checkout.callback');
 
@@ -39,7 +41,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('/items', [PosItemController::class, 'getItems'])->name('items.index');
         Route::get('/items/{id}', [PosItemController::class, 'getItem'])->name('items.show');
-        Route::post('/checkout', [PosItemController::class, 'checkout'])->name('checkout');
+        Route::post('/checkout', [PosCheckoutController::class, 'checkout'])->name('checkout');
     });
 });
 

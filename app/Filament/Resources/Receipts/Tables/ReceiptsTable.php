@@ -18,9 +18,6 @@ class ReceiptsTable
                 TextColumn::make('receipt_number')
                     ->label('Receipt #')
                     ->searchable(),
-                TextColumn::make('transaction_id')
-                    ->label('Transaction #')
-                    ->sortable(),
                 TextColumn::make('user.name')
                     ->label('Cashier')
                     ->searchable(),
