@@ -31,7 +31,11 @@ const selectedCategory = ref(props.filters?.category || "All");
 const searchQuery = ref(props.filters?.search || "");
 const cart = ref([]);
 const showCart = ref(false);
+const showToast = ref(false);
+const toastMessage = ref("");
+const toastTone = ref("success");
 let searchDebounceTimer = null;
+let toastTimer = null;
 const toNumber = (value) => {
     const parsed = Number(value);
 
@@ -89,6 +93,10 @@ onBeforeUnmount(() => {
     if (searchDebounceTimer) {
         clearTimeout(searchDebounceTimer);
     }
+
+    if (toastTimer) {
+        clearTimeout(toastTimer);
+    }
 });
 
 const goToPage = (page) => {
@@ -112,6 +120,20 @@ const cartItemCount = computed(() =>
 
 const grandTotal = computed(() => cartTotal.value);
 
+const showToastMessage = (message, tone = "success") => {
+    toastMessage.value = message;
+    toastTone.value = tone;
+    showToast.value = true;
+
+    if (toastTimer) {
+        clearTimeout(toastTimer);
+    }
+
+    toastTimer = setTimeout(() => {
+        showToast.value = false;
+    }, 1400);
+};
+
 const addToCart = (itemToAdd) => {
     const existingItem = cart.value.find((item) => item.id === itemToAdd.id);
 
@@ -123,10 +145,17 @@ const addToCart = (itemToAdd) => {
             quantity: 1,
         });
     }
+
+    showToastMessage("Added successfully");
 };
 
 const removeFromCart = (itemId) => {
+    const removedItem = cart.value.find((item) => item.id === itemId);
     cart.value = cart.value.filter((item) => item.id !== itemId);
+
+    if (removedItem) {
+        showToastMessage("Removed from cart", "danger");
+    }
 };
 
 const updateQuantity = (itemId, change) => {
@@ -140,7 +169,13 @@ const updateQuantity = (itemId, change) => {
 
     if (item.quantity <= 0) {
         removeFromCart(itemId);
+        return;
     }
+
+    showToastMessage(
+        change > 0 ? "Quantity increased" : "Quantity decreased",
+        change > 0 ? "success" : "danger",
+    );
 };
 
 const clearCart = () => {
@@ -162,6 +197,25 @@ const processCheckout = () => {
             <div
                 class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(249,115,22,0.16),transparent_40%),radial-gradient(circle_at_85%_5%,rgba(234,179,8,0.16),transparent_35%)]"
             ></div>
+
+            <Transition
+                enter-active-class="transition duration-200"
+                enter-from-class="translate-y-2 opacity-0"
+                enter-to-class="translate-y-0 opacity-100"
+                leave-active-class="transition duration-150"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="translate-y-2 opacity-0"
+            >
+                <div
+                    v-if="showToast"
+                    :class="[
+                        'fixed bottom-4 right-4 z-[60] rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg',
+                        toastTone === 'danger' ? 'bg-rose-600' : 'bg-emerald-600',
+                    ]"
+                >
+                    {{ toastMessage }}
+                </div>
+            </Transition>
 
             <header class="sticky top-0 z-30 border-b border-amber-200 bg-white/90 backdrop-blur">
                 <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 lg:px-10 2xl:px-12">
@@ -439,13 +493,22 @@ const processCheckout = () => {
                             class="rounded-xl border border-slate-200 p-3"
                         >
                             <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="text-sm font-semibold text-slate-900">{{ item.name }}</h3>
-                                    <p class="mt-1 text-xs text-slate-500">{{ formatMoney(item.price) }} each</p>
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <div class="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                                        <img
+                                            :src="item.image"
+                                            :alt="item.name"
+                                            class="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h3 class="truncate text-sm font-semibold text-slate-900">{{ item.name }}</h3>
+                                        <p class="mt-1 text-xs text-slate-500">{{ formatMoney(item.price) }} each</p>
+                                    </div>
                                 </div>
                                 <button
                                     @click="removeFromCart(item.id)"
-                                    class="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                                    class="shrink-0 text-xs font-semibold text-rose-600 hover:text-rose-700"
                                 >
                                     Remove
                                 </button>
