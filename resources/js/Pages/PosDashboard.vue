@@ -67,6 +67,18 @@ const pesoFormatter = new Intl.NumberFormat("en-PH", {
 });
 const formatMoney = (value) => pesoFormatter.format(toNumber(value));
 const isHexColor = (value) => /^#[0-9A-F]{6}$/i.test(String(value ?? ""));
+const hexToRgba = (hex, alpha = 1) => {
+    if (!isHexColor(hex)) {
+        return `rgba(234, 88, 12, ${alpha})`;
+    }
+
+    const normalized = hex.replace("#", "");
+    const r = Number.parseInt(normalized.slice(0, 2), 16);
+    const g = Number.parseInt(normalized.slice(2, 4), 16);
+    const b = Number.parseInt(normalized.slice(4, 6), 16);
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
 const fallbackTheme = {
     pos_name: "Fast Food Kiosk",
     primary_color: "#ea580c",
@@ -100,6 +112,9 @@ const themeStyle = computed(() => ({
     "--pos-surface": branding.value.surface_color,
     "--pos-background": branding.value.background_color,
     "--pos-border": branding.value.border_color,
+}));
+const dashboardOverlayStyle = computed(() => ({
+    backgroundImage: `radial-gradient(circle at 20% 20%, ${hexToRgba(branding.value.primary_color, 0.16)}, transparent 40%), radial-gradient(circle at 85% 5%, ${hexToRgba(branding.value.border_color, 0.16)}, transparent 35%)`,
 }));
 const currentUser = computed(() => ({
     name: props.auth?.user?.name ?? "Cashier",
@@ -363,7 +378,8 @@ onMounted(() => {
     <AuthenticatedLayout>
         <div :style="themeStyle" class="relative min-h-screen overflow-hidden bg-[var(--pos-background)] text-slate-900">
             <div
-                class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(249,115,22,0.16),transparent_40%),radial-gradient(circle_at_85%_5%,rgba(234,179,8,0.16),transparent_35%)]"
+                :style="dashboardOverlayStyle"
+                class="pointer-events-none absolute inset-0"
             ></div>
 
             <Transition
