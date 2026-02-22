@@ -1,440 +1,125 @@
-# Laravel 12 Vue Starter Kit
-
-A modern full-stack starter kit built with Laravel 12, Vue 3, Inertia.js, and Tailwind CSS. This template provides a solid foundation for building robust web applications with authentication, authorization, and API documentation out of the box.
-
-## 🚀 Features
-
-- **Laravel 12** - The latest version of Laravel framework
-- **Vue 3** - Progressive JavaScript framework with Composition API
-- **Inertia.js** - Modern monolith architecture without API complexity
-- **Jetstream** - Authentication scaffolding with team management
-- **Fortify** - Backend authentication implementation
-- **Spatie Permissions** - Role and permission management
-- **Tailwind CSS** - Utility-first CSS framework
-- **Vite** - Lightning-fast build tool
-- **Sanctum** - API token authentication
-- **Swagger/OpenAPI** - API documentation with L5-Swagger
-- **Docker Support** - Containerized development environment
-- **Ziggy** - Use Laravel named routes in Vue components
-
-## 📋 Prerequisites
-
-### Required
-- **WSL 2** (Windows Subsystem for Linux) - For Windows users
-- **Docker Desktop** with WSL 2 backend enabled
-- **Docker Compose**
-- **Make** (usually pre-installed in WSL)
-
-### Included in Docker Container
-- PHP 8.2 or higher
-- Composer
-- Node.js 18+ and npm
-- MySQL/PostgreSQL database
-
-## 🛠️ Installation
-
-### Prerequisites Setup (Windows Users)
-
-1. **Install WSL 2**
-   ```powershell
-   # Run in PowerShell as Administrator
-   wsl --install
-   ```
-   Restart your computer after installation.
-
-2. **Install Docker Desktop**
-   - Download from https://www.docker.com/products/docker-desktop
-   - During installation, ensure "Use WSL 2 based engine" is enabled
-   - In Docker Desktop settings, go to Resources > WSL Integration
-   - Enable integration with your WSL distribution (Ubuntu)
-
-3. **Open WSL Terminal**
-   ```powershell
-   wsl
-   ```
-
-### Docker Installation (Using Makefile)
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd event-schedule-web
-   ```
-
-2. **Copy environment file**
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Start Docker containers using Makefile**
-   ```bash
-   make up
-   ```
-   This command uses the Makefile to start all Docker containers defined in compose.yaml.
-
-4. **Install PHP dependencies via Makefile**
-   ```bash
-   make composer cmd="install"
-   ```
-
-5. **Install JavaScript dependencies via Makefile**
-   ```bash
-   make npm cmd="install"
-   ```
-
-6. **Generate application key**
-   ```bash
-   make artisan cmd="key:generate"
-   ```
-
-7. **Run migrations**
-   ```bash
-   make migrate
-   ```
-
-8. **Start Vite development server**
-   ```bash
-   make dev
-   ```
-
-9. **Access the application**
-   - Open your browser and navigate to `http://localhost`
-   - The application should now be running!
-
-### Alternative: Manual Installation (Without Docker)
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd event-schedule-web
-   ```
-
-2. **Install PHP dependencies**
-   ```bash
-   composer install
-   ```
-
-3. **Install JavaScript dependencies**
-   ```bash
-   npm install
-   ```
-
-4. **Copy environment file**
-   ```bash
-   cp .env.example .env
-   ```
-
-5. **Generate application key**
-   ```bash
-   php artisan key:generate
-   ```
-
-6. **Configure your database in `.env` file**
-
-7. **Run migrations**
-   ```bash
-   php artisan migrate
-   ```
-
-8. **Start the development servers**
-   ```bash
-   # Terminal 1: Laravel server
-   php artisan serve
-   
-   # Terminal 2: Vite dev server
-   npm run dev
-   ```
-
-## 🎯 Usage
-
-### Available Make Commands
-
-| Command | Description |
-|---------|-------------|
-| `make up` | Start Docker containers |
-| `make down` | Stop Docker containers |
-| `make restart` | Restart Docker containers |
-| `make migrate` | Run database migrations |
-| `make migrate-refresh` | Refresh database and re-run migrations |
-| `make seed` | Seed the database |
-| `make tinker` | Open Laravel Tinker |
-| `make shell` | Enter container shell |
-| `make artisan cmd="command"` | Run Artisan command |
-| `make composer cmd="command"` | Run Composer command |
-| `make npm cmd="command"` | Run npm command |
-| `make dev` | Start Vite dev server |
-| `make build` | Build production assets |
-| `make test` | Run PHPUnit tests |
-| `make logs` | View container logs |
-
-### Development Workflow
-
-**Important:** All commands should be run from within WSL terminal in the project directory.
-
-```bash
-# Open WSL terminal (from Windows)
-wsl
-
-# Navigate to project
-cd ~/PersonalProjects/event-schedule-web
-
-# Start containers using Makefile
-make up
-
-# Run migrations using Makefile
-make migrate
-
-# Start Vue dev server with hot reload using Makefile
-make dev
-
-# In another WSL terminal, view logs
-make logs
-```
-
-### Building for Production
-
-```bash
-# Build optimized assets
-make build
-
-# Or manually
-npm run build
-```
-
-## 📁 Project Structure
-
-```
-├── app/
-│   ├── Actions/          # Jetstream actions
-│   ├── Http/
-│   │   ├── Controllers/  # API and web controllers
-│   │   └── Middleware/   # Custom middleware
-│   ├── Models/           # Eloquent models
-│   └── Providers/        # Service providers
-├── config/               # Configuration files
-├── database/
-│   ├── factories/        # Model factories
-│   ├── migrations/       # Database migrations
-│   └── seeders/          # Database seeders
-├── resources/
-│   ├── css/              # Stylesheets
-│   ├── js/
-│   │   ├── Components/   # Vue components
-│   │   ├── Layouts/      # Layout components
-│   │   └── Pages/        # Inertia pages
-│   └── views/            # Blade templates
-├── routes/
-│   ├── api.php           # API routes
-│   ├── web.php           # Web routes
-│   └── console.php       # Console commands
-├── tests/                # Unit and feature tests
-└── public/               # Public assets
-```
-
-## 🔐 Authentication
-
-This starter kit uses **Laravel Jetstream** with **Fortify** for authentication, providing:
-
-- User registration
-- Login/Logout
-- Two-factor authentication
-- Email verification
-- Password reset
-- Password confirmation
-- API token management
-- Profile management
-
-Access authentication features at `/login`, `/register`, etc.
-
-## 🔑 Authorization
-
-**Spatie Laravel Permission** is integrated for role and permission management:
-
-```php
-// Assign role to user
-$user->assignRole('admin');
-
-// Give permission to user
-$user->givePermissionTo('edit articles');
-
-// Check permissions in controllers
-if ($user->can('edit articles')) {
-    // ...
-}
-```
-
-```vue
-<!-- Check permissions in Vue components -->
-<template>
-  <div v-if="$page.props.auth.user.permissions.includes('edit articles')">
-    <!-- Content for users with permission -->
-  </div>
-</template>
-```
-
-## 📚 API Documentation
-
-API documentation is available via **L5-Swagger**:
-
-1. Generate documentation:
-   ```bash
-   php artisan l5-swagger:generate
-   ```
-
-2. Access Swagger UI at: `http://localhost/api/documentation`
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-make test
-
-# Or manually
-php artisan test
-
-# Run specific test file
-php artisan test --filter=ExampleTest
-
-# Run with coverage
-php artisan test --coverage
-```
-
-## 🎨 Frontend Development
-
-### Using Inertia.js
-
-Create Vue pages in `resources/js/Pages/`:
-
-```vue
-<script setup>
-import { Head } from '@inertiajs/vue3'
-
-defineProps({
-  users: Array
-})
-</script>
-
-<template>
-  <Head title="Users" />
-  <div>
-    <h1>Users</h1>
-    <div v-for="user in users" :key="user.id">
-      {{ user.name }}
-    </div>
-  </div>
-</template>
-```
-
-Return from controller:
-
-```php
-use Inertia\Inertia;
-
-public function index()
-{
-    return Inertia::render('Users/Index', [
-        'users' => User::all()
-    ]);
-}
-```
-
-### Using Ziggy Routes
-
-```vue
-<script setup>
-import { router } from '@inertiajs/vue3'
-
-const deleteUser = (userId) => {
-  router.delete(route('users.destroy', userId))
-}
-</script>
-```
-
-## 🐳 Docker Configuration
-
-This application is designed to run with **Docker in WSL 2**. All Docker commands are managed through the **Makefile** for convenience.
-
-### Docker Files
-
-- **compose.yaml** - Main Docker Compose configuration
-- **docker-compose.override.yml** - Local development overrides
-- **Makefile** - Convenient commands to manage Docker containers
-
-### How It Works
-
-The Makefile wraps Docker Compose commands to simplify container management:
-
-```makefile
-# Instead of: docker-compose up -d
-make up
-
-# Instead of: docker-compose exec app php artisan migrate
-make migrate
-
-# Instead of: docker-compose exec app composer install
-make composer cmd="install"
-```
-
-### WSL Integration
-
-The project path `\\wsl.localhost\Ubuntu\home\allan\PersonalProjects\event-schedule-web` shows this runs in WSL 2. Benefits:
-
-- Native Linux environment for Laravel
-- Better Docker performance
-- Seamless file system access from Windows
-- Full compatibility with Linux-based tools
-
-### Customization
-
-Customize `compose.yaml` and `docker-compose.override.yml` based on your infrastructure needs. The Makefile can also be extended with additional commands.
-
-## 📝 Environment Variables
-
-Key environment variables to configure:
+# POS Management System
+
+Laravel + Inertia + Vue POS application with:
+- Client-facing POS dashboard
+- Filament CMS/admin panel
+- Dynamic branding (name, logo, theme palette)
+- Cash checkout and Maya checkout
+- Transactions and receipts management
+
+## Stack
+
+- PHP 8.2+
+- Laravel 12
+- Vue 3 + Inertia.js
+- Tailwind CSS
+- Filament v5
+- Spatie Media Library
+- Spatie Permission
+- MySQL
+
+## Main Features
+
+- POS dashboard (`/pos/dashboard`)
+  - Product catalog with categories/search
+  - Cart, quantity updates, checkout flow
+  - Receipt modal and recent receipts list
+  - Theme-aware UI
+- Checkout
+  - Cash checkout (instant completion)
+  - Maya checkout redirect flow with callback verification
+- CMS / Admin (`/admin`)
+  - App settings (POS name, logo, predefined color schemes)
+  - Transactions and receipts resources
+  - POS catalog management
+
+## Environment
+
+Copy `.env.example` to `.env` and configure:
 
 ```env
-APP_NAME="Event Schedule"
-APP_ENV=local
-APP_DEBUG=true
 APP_URL=http://localhost
 
 DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
+DB_HOST=mysql
 DB_PORT=3306
 DB_DATABASE=laravel
-DB_USERNAME=root
-DB_PASSWORD=
+DB_USERNAME=sail
+DB_PASSWORD=password
 
-MAIL_MAILER=smtp
-MAIL_HOST=mailhog
-MAIL_PORT=1025
+# Maya Checkout (Sandbox)
+MAYA_BASE_URL=https://pg-sandbox.paymaya.com
+MAYA_PUBLIC_KEY=
+MAYA_SECRET_KEY=
 ```
 
-## 🤝 Contributing
+Important:
+- Keep Maya keys server-side only.
+- Rotate keys if they were exposed.
+- Use sandbox keys for testing and production keys only in production.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Setup (Laravel Sail / Docker)
 
-## 📄 License
+1. Install dependencies:
+```bash
+composer install
+npm install
+```
 
-This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+2. Prepare environment:
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## 🆘 Support
+3. Start containers:
+```bash
+./vendor/bin/sail up -d
+```
 
-For issues and questions:
-- Create an issue in the repository
-- Check Laravel documentation: https://laravel.com/docs
-- Check Vue documentation: https://vuejs.org
-- Check Inertia.js documentation: https://inertiajs.com
+4. Run migrations and seeders:
+```bash
+./vendor/bin/sail artisan migrate --seed
+```
 
-## 🙏 Acknowledgments
+5. Start frontend dev server:
+```bash
+./vendor/bin/sail npm run dev
+```
 
-- [Laravel](https://laravel.com)
-- [Vue.js](https://vuejs.org)
-- [Inertia.js](https://inertiajs.com)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Laravel Jetstream](https://jetstream.laravel.com)
-- [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission)
+6. Open:
+- App: `http://localhost`
+- Admin: `http://localhost/admin`
+
+Using Makefile shortcuts:
+
+```bash
+make up
+make down
+make migrate
+make test
+make npm cmd="run dev"
+make npm-build
+```
+
+## Project Structure (Key Parts)
+
+- `app/Http/Controllers/PosItemController.php`
+  - POS dashboard and item endpoints
+- `app/Http/Controllers/PosCheckoutController.php`
+  - Cash/Maya checkout initialization
+- `app/Http/Controllers/MayaCheckoutController.php`
+  - Maya callback verification and final transaction status
+- `app/Services/ReceiptService.php`
+  - Receipt payload building and snapshot persistence
+- `resources/js/Pages/PosDashboard.vue`
+  - Main POS UI
+- `app/Filament/Resources/*`
+  - CMS resources (transactions, receipts, settings, etc.)
+
+## Notes on Branding
+
+Branding is shared to frontend through Inertia middleware and applied via CSS variables.
+Updating app settings in Filament changes:
+- POS name/logo
+- Theme colors across frontend pages (including auth pages and POS dashboard)
