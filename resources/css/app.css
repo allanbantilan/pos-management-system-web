@@ -2,6 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --brand-primary: #ea580c;
+    --brand-primary-hover: #f97316;
+    --brand-surface: #fef3c7;
+    --brand-background: #fffbeb;
+    --brand-border: #fde68a;
+}
+
 [x-cloak] {
     display: none;
+}
+
+#app .bg-amber-50 {
+    background-color: var(--brand-background) !important;
+}
+
+#app .bg-amber-100,
+#app .hover\:bg-amber-100:hover {
+    background-color: var(--brand-surface) !important;
+}
+
+#app .border-amber-200,
+#app .border-amber-300 {
+    border-color: var(--brand-border) !important;
+}
+
+#app .bg-orange-600 {
+    background-color: var(--brand-primary) !important;
+}
+
+#app .text-orange-600 {
+    color: var(--brand-primary) !important;
+}
+
+#app .hover\:bg-orange-500:hover,
+#app .hover\:bg-orange-700:hover {
+    background-color: var(--brand-primary-hover) !important;
+}
+
+#app .focus\:border-orange-500:focus {
+    border-color: var(--brand-primary) !important;
+}
+
+#app .focus\:ring-orange-100:focus {
+    --tw-ring-color: color-mix(in srgb, var(--brand-surface) 65%, white) !important;
+}
+
+#app .focus\:ring-orange-500:focus {
+    --tw-ring-color: var(--brand-primary) !important;
+}
+
+#app .text-blue-600,
+#app .hover\:text-blue-600:hover {
+    color: var(--brand-primary) !important;
+}
+
+#app .from-blue-600,
+#app .from-orange-600 {
+    --tw-gradient-from: var(--brand-primary) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+#app .to-indigo-600,
+#app .to-indigo-700,
+#app .to-orange-500 {
+    --tw-gradient-to: var(--brand-primary-hover) var(--tw-gradient-to-position) !important;
+}
+
+#app .hover\:from-blue-700:hover,
+#app .hover\:from-orange-700:hover {
+    --tw-gradient-from: var(--brand-primary-hover) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+#app .hover\:to-indigo-700:hover,
+#app .hover\:to-orange-700:hover {
+    --tw-gradient-to: var(--brand-primary-hover) var(--tw-gradient-to-position) !important;
 }

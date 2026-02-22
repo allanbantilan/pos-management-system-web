@@ -4,6 +4,31 @@ import { computed, ref } from "vue";
 
 const page = usePage();
 const appName = computed(() => page.props.appName || "Pos System");
+const posName = computed(() => page.props.branding?.pos_name || appName.value);
+const logoUrl = computed(() => page.props.branding?.logo_url || null);
+const posInitial = computed(() => posName.value?.charAt(0)?.toUpperCase() || "P");
+const currentYear = new Date().getFullYear();
+const branding = computed(() => page.props.branding || {});
+const hexToRgba = (hex, alpha) => {
+    const value = String(hex || "").replace("#", "");
+
+    if (!/^[0-9a-fA-F]{6}$/.test(value)) {
+        return `rgba(234,88,12,${alpha})`;
+    }
+
+    const num = Number.parseInt(value, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+const authBackgroundStyle = computed(() => ({
+    backgroundColor: branding.value.background_color || "var(--brand-background)",
+}));
+const authOverlayStyle = computed(() => ({
+    backgroundImage: `radial-gradient(circle at 20% 20%, ${hexToRgba(branding.value.primary_color, 0.16)}, transparent 40%), radial-gradient(circle at 85% 5%, ${hexToRgba(branding.value.border_color, 0.16)}, transparent 35%)`,
+}));
 
 const form = useForm({
     name: "",
@@ -26,49 +51,29 @@ const submit = () => {
 <template>
     <Head title="Register" />
 
-    <div
-        class="relative min-h-screen overflow-hidden bg-amber-50 text-slate-900"
-    >
-        <div
-            class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(249,115,22,0.16),transparent_40%),radial-gradient(circle_at_85%_5%,rgba(234,179,8,0.16),transparent_35%),linear-gradient(to_bottom,rgba(255,251,235,1),rgba(254,243,199,0.5))]"
-        ></div>
+    <div :style="authBackgroundStyle" class="relative min-h-screen overflow-hidden text-slate-900">
+        <div :style="authOverlayStyle" class="pointer-events-none absolute inset-0"></div>
 
-        <div class="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
-            <div class="grid w-full gap-8 lg:grid-cols-2">
-                <section class="hidden rounded-3xl bg-orange-700 p-8 text-amber-50 shadow-2xl lg:flex lg:flex-col lg:justify-between">
-                    <div>
-                        <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">
-                            Team Onboarding
-                        </div>
-                        <h1 class="mt-6 text-4xl font-semibold leading-tight">
-                            Create your cashier account in minutes.
-                        </h1>
-                        <p class="mt-4 max-w-md text-sm text-slate-300">
-                            Start selling with a secure account built for fast checkout and reliable inventory control.
-                        </p>
-                    </div>
-                    <ul class="space-y-3 text-sm text-slate-300">
-                        <li class="rounded-2xl border border-white/10 bg-white/5 p-4">Access POS dashboard and product catalog instantly.</li>
-                        <li class="rounded-2xl border border-white/10 bg-white/5 p-4">Protect operations with secure authentication.</li>
-                    </ul>
-                </section>
+        <header class="relative z-10 border-b border-slate-200/70 bg-white/80 backdrop-blur">
+            <div class="mx-auto flex w-full max-w-6xl items-center px-4 py-4 sm:px-6 lg:px-8">
+                <div class="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-orange-600 text-sm font-bold text-white shadow-sm">
+                    <img v-if="logoUrl" :src="logoUrl" :alt="`${posName} logo`" class="h-full w-full object-cover" />
+                    <span v-else>{{ posInitial }}</span>
+                </div>
+                <p class="ml-3 text-base font-semibold text-slate-900">{{ posName }}</p>
+            </div>
+        </header>
 
-                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
-                    <div class="mb-6">
-                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            {{ appName }}
-                        </p>
-                        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-                            Create account
-                        </h2>
-                        <p class="mt-2 text-sm text-slate-600">
-                            Set up access for your POS workspace.
-                        </p>
+        <div class="relative z-10 flex min-h-[calc(100vh-73px)] flex-col">
+            <main class="mx-auto flex w-full max-w-xl flex-1 items-center px-4 py-4 sm:px-6 lg:px-8">
+                <section class="w-full rounded-3xl border border-slate-200 bg-white p-5 shadow-xl sm:p-6">
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-semibold tracking-tight text-slate-900">Create account</h2>
                     </div>
 
-                    <form @submit.prevent="submit" class="space-y-4">
+                    <form @submit.prevent="submit" class="space-y-3">
                         <div>
-                            <label for="name" class="mb-2 block text-sm font-medium text-slate-700">Full name</label>
+                            <label for="name" class="mb-1 block text-sm font-medium text-slate-700">Full name</label>
                             <input
                                 id="name"
                                 v-model="form.name"
@@ -77,7 +82,7 @@ const submit = () => {
                                 autofocus
                                 autocomplete="name"
                                 placeholder="Alex Carter"
-                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                             />
                             <p v-if="form.errors.name" class="mt-2 text-sm text-rose-600">
                                 {{ form.errors.name }}
@@ -85,7 +90,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label for="email" class="mb-2 block text-sm font-medium text-slate-700">Email</label>
+                            <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
                             <input
                                 id="email"
                                 v-model="form.email"
@@ -93,7 +98,7 @@ const submit = () => {
                                 required
                                 autocomplete="username"
                                 placeholder="name@company.com"
-                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                                class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                             />
                             <p v-if="form.errors.email" class="mt-2 text-sm text-rose-600">
                                 {{ form.errors.email }}
@@ -101,7 +106,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label for="password" class="mb-2 block text-sm font-medium text-slate-700">Password</label>
+                            <label for="password" class="mb-1 block text-sm font-medium text-slate-700">Password</label>
                             <div class="relative">
                                 <input
                                     id="password"
@@ -110,7 +115,7 @@ const submit = () => {
                                     required
                                     autocomplete="new-password"
                                     placeholder="Minimum 8 characters"
-                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                                 />
                                 <button
                                     type="button"
@@ -126,7 +131,7 @@ const submit = () => {
                         </div>
 
                         <div>
-                            <label for="password_confirmation" class="mb-2 block text-sm font-medium text-slate-700">Confirm password</label>
+                            <label for="password_confirmation" class="mb-1 block text-sm font-medium text-slate-700">Confirm password</label>
                             <div class="relative">
                                 <input
                                     id="password_confirmation"
@@ -135,7 +140,7 @@ const submit = () => {
                                     required
                                     autocomplete="new-password"
                                     placeholder="Re-enter password"
-                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                                    class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
                                 />
                                 <button
                                     type="button"
@@ -150,7 +155,7 @@ const submit = () => {
                             </p>
                         </div>
 
-                        <label class="flex items-start gap-3 text-sm text-slate-600">
+                        <label class="flex items-start gap-3 text-xs text-slate-600">
                             <input
                                 id="terms"
                                 v-model="form.terms"
@@ -159,7 +164,7 @@ const submit = () => {
                                 class="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
                             />
                             <span>
-                                I agree to the Terms of Service and Privacy Policy.
+                                I agree to the Terms and Privacy Policy.
                             </span>
                         </label>
                         <p v-if="form.errors.terms" class="text-sm text-rose-600">
@@ -178,12 +183,18 @@ const submit = () => {
 
                     <p class="mt-6 text-center text-sm text-slate-600">
                         Already have an account?
-                        <Link :href="route('login')" class="font-semibold text-orange-700 hover:text-orange-800">
+                        <Link :href="route('login')" class="font-semibold text-[var(--brand-primary)] transition hover:text-[var(--brand-primary-hover)]">
                             Sign in
                         </Link>
                     </p>
                 </section>
-            </div>
+            </main>
+
+            <footer class="border-t border-slate-200/70 bg-white/70 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
+                <p class="mx-auto w-full max-w-6xl text-center text-xs text-slate-600">
+                    &copy; {{ currentYear }} {{ posName }}. All rights reserved.
+                </p>
+            </footer>
         </div>
     </div>
 </template>

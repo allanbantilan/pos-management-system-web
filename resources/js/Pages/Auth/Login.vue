@@ -9,7 +9,32 @@ const props = defineProps({
 
 const page = usePage();
 const appName = computed(() => page.props.appName || "Pos System");
+const posName = computed(() => page.props.branding?.pos_name || appName.value);
+const logoUrl = computed(() => page.props.branding?.logo_url || null);
+const posInitial = computed(() => posName.value?.charAt(0)?.toUpperCase() || "P");
+const currentYear = new Date().getFullYear();
 const showPassword = ref(false);
+const branding = computed(() => page.props.branding || {});
+const hexToRgba = (hex, alpha) => {
+    const value = String(hex || "").replace("#", "");
+
+    if (!/^[0-9a-fA-F]{6}$/.test(value)) {
+        return `rgba(234,88,12,${alpha})`;
+    }
+
+    const num = Number.parseInt(value, 16);
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+const authBackgroundStyle = computed(() => ({
+    backgroundColor: branding.value.background_color || "var(--brand-background)",
+}));
+const authOverlayStyle = computed(() => ({
+    backgroundImage: `radial-gradient(circle at 20% 20%, ${hexToRgba(branding.value.primary_color, 0.16)}, transparent 40%), radial-gradient(circle at 85% 5%, ${hexToRgba(branding.value.border_color, 0.16)}, transparent 35%)`,
+}));
 
 const form = useForm({
     email: "",
@@ -30,50 +55,24 @@ const submit = () => {
 <template>
     <Head title="Sign In" />
 
-    <div
-        class="relative min-h-screen overflow-hidden bg-amber-50 text-slate-900"
-    >
-        <div
-            class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(249,115,22,0.16),transparent_40%),radial-gradient(circle_at_85%_5%,rgba(234,179,8,0.16),transparent_35%),linear-gradient(to_bottom,rgba(255,251,235,1),rgba(254,243,199,0.5))]"
-        ></div>
+    <div :style="authBackgroundStyle" class="relative min-h-screen overflow-hidden text-slate-900">
+        <div :style="authOverlayStyle" class="pointer-events-none absolute inset-0"></div>
 
-        <div class="relative mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10 sm:px-6 lg:px-8">
-            <div class="grid w-full gap-8 lg:grid-cols-2">
-                <section class="hidden rounded-3xl bg-orange-700 p-8 text-amber-50 shadow-2xl lg:flex lg:flex-col lg:justify-between">
-                    <div>
-                        <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-200">
-                            Retail Console
-                        </div>
-                        <h1 class="mt-6 text-4xl font-semibold leading-tight">
-                            Sell faster with a cleaner POS workflow.
-                        </h1>
-                        <p class="mt-4 max-w-md text-sm text-slate-300">
-                            Access inventory, checkout, and customer-facing operations from one modern dashboard.
-                        </p>
-                    </div>
-                    <div class="grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
-                        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <p class="text-2xl font-semibold">24/7</p>
-                            <p class="mt-1 text-slate-300">Transaction access</p>
-                        </div>
-                        <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <p class="text-2xl font-semibold">Realtime</p>
-                            <p class="mt-1 text-slate-300">Product visibility</p>
-                        </div>
-                    </div>
-                </section>
+        <header class="relative z-10 border-b border-slate-200/70 bg-white/80 backdrop-blur">
+            <div class="mx-auto flex w-full max-w-6xl items-center px-4 py-4 sm:px-6 lg:px-8">
+                <div class="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-orange-600 text-sm font-bold text-white shadow-sm">
+                    <img v-if="logoUrl" :src="logoUrl" :alt="`${posName} logo`" class="h-full w-full object-cover" />
+                    <span v-else>{{ posInitial }}</span>
+                </div>
+                <p class="ml-3 text-base font-semibold text-slate-900">{{ posName }}</p>
+            </div>
+        </header>
 
-                <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
+        <div class="relative z-10 flex min-h-[calc(100vh-73px)] flex-col">
+            <main class="mx-auto flex w-full max-w-lg flex-1 items-center px-4 py-6 sm:px-6 lg:px-8">
+                <section class="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
                     <div class="mb-6">
-                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                            {{ appName }}
-                        </p>
-                        <h2 class="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
-                            Sign in
-                        </h2>
-                        <p class="mt-2 text-sm text-slate-600">
-                            Enter your credentials to open the POS dashboard.
-                        </p>
+                        <h2 class="text-3xl font-semibold tracking-tight text-slate-900">Sign in</h2>
                     </div>
 
                     <div
@@ -107,7 +106,7 @@ const submit = () => {
                                 <Link
                                     v-if="canResetPassword"
                                     :href="route('password.request')"
-                                    class="text-sm font-medium text-orange-700 hover:text-orange-800"
+                                    class="text-sm font-medium text-[var(--brand-primary)] transition hover:text-[var(--brand-primary-hover)]"
                                 >
                                     Forgot password?
                                 </Link>
@@ -156,12 +155,18 @@ const submit = () => {
 
                     <p class="mt-6 text-center text-sm text-slate-600">
                         New to the platform?
-                        <Link :href="route('register')" class="font-semibold text-orange-700 hover:text-orange-800">
+                        <Link :href="route('register')" class="font-semibold text-[var(--brand-primary)] transition hover:text-[var(--brand-primary-hover)]">
                             Create an account
                         </Link>
                     </p>
                 </section>
-            </div>
+            </main>
+
+            <footer class="border-t border-slate-200/70 bg-white/70 px-4 py-3 backdrop-blur sm:px-6 lg:px-8">
+                <p class="mx-auto w-full max-w-6xl text-center text-xs text-slate-600">
+                    &copy; {{ currentYear }} {{ posName }}. All rights reserved.
+                </p>
+            </footer>
         </div>
     </div>
 </template>

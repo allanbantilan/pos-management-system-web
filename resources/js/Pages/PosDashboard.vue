@@ -1,5 +1,5 @@
 <script setup>
-import { Head, Link, router } from "@inertiajs/vue3";
+import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
@@ -36,6 +36,7 @@ const toastMessage = ref("");
 const toastTone = ref("success");
 let searchDebounceTimer = null;
 let toastTimer = null;
+const page = usePage();
 const toNumber = (value) => {
     const parsed = Number(value);
 
@@ -47,6 +48,41 @@ const pesoFormatter = new Intl.NumberFormat("en-PH", {
     minimumFractionDigits: 2,
 });
 const formatMoney = (value) => pesoFormatter.format(toNumber(value));
+const isHexColor = (value) => /^#[0-9A-F]{6}$/i.test(String(value ?? ""));
+const fallbackTheme = {
+    pos_name: "Fast Food Kiosk",
+    primary_color: "#ea580c",
+    primary_hover_color: "#f97316",
+    surface_color: "#fef3c7",
+    background_color: "#fffbeb",
+    border_color: "#fde68a",
+};
+const branding = computed(() => {
+    const source = page.props?.branding ?? {};
+
+    return {
+        pos_name: source.pos_name || source.kiosk_name || fallbackTheme.pos_name,
+        logo_url: source.logo_url || null,
+        primary_color: isHexColor(source.primary_color) ? source.primary_color : fallbackTheme.primary_color,
+        primary_hover_color: isHexColor(source.primary_hover_color)
+            ? source.primary_hover_color
+            : fallbackTheme.primary_hover_color,
+        surface_color: isHexColor(source.surface_color) ? source.surface_color : fallbackTheme.surface_color,
+        background_color: isHexColor(source.background_color)
+            ? source.background_color
+            : fallbackTheme.background_color,
+        border_color: isHexColor(source.border_color) ? source.border_color : fallbackTheme.border_color,
+    };
+});
+const kioskName = computed(() => branding.value.pos_name);
+const logoUrl = computed(() => branding.value.logo_url || null);
+const themeStyle = computed(() => ({
+    "--pos-primary": branding.value.primary_color,
+    "--pos-primary-hover": branding.value.primary_hover_color,
+    "--pos-surface": branding.value.surface_color,
+    "--pos-background": branding.value.background_color,
+    "--pos-border": branding.value.border_color,
+}));
 const currentUser = computed(() => ({
     name: props.auth?.user?.name ?? "Cashier",
     email: props.auth?.user?.email ?? "",
@@ -193,7 +229,7 @@ const processCheckout = () => {
     <Head title="POS Dashboard" />
 
     <AuthenticatedLayout>
-        <div class="relative min-h-screen overflow-hidden bg-amber-50 text-slate-900">
+        <div :style="themeStyle" class="relative min-h-screen overflow-hidden bg-[var(--pos-background)] text-slate-900">
             <div
                 class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(249,115,22,0.16),transparent_40%),radial-gradient(circle_at_85%_5%,rgba(234,179,8,0.16),transparent_35%)]"
             ></div>
@@ -217,23 +253,29 @@ const processCheckout = () => {
                 </div>
             </Transition>
 
-            <header class="sticky top-0 z-30 border-b border-amber-200 bg-white/90 backdrop-blur">
+            <header class="sticky top-0 z-30 border-b border-[var(--pos-border)] bg-white/90 backdrop-blur">
                 <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 lg:px-10 2xl:px-12">
                     <div class="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto sm:flex-1 sm:justify-start">
                         <div class="flex min-w-0 items-center gap-3">
-                            <div class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-600 text-white shadow-lg">
-                                <span class="text-sm font-bold">K</span>
+                            <div class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--pos-primary)] text-white shadow-lg">
+                                <img
+                                    v-if="logoUrl"
+                                    :src="logoUrl"
+                                    :alt="`${kioskName} logo`"
+                                    class="h-full w-full rounded-2xl object-cover"
+                                />
+                                <span v-else class="text-sm font-bold">K</span>
                             </div>
                             <div class="min-w-0">
                                 <h1 class="truncate text-xl font-semibold tracking-tight sm:text-2xl">
-                                    Fast Food Kiosk
+                                    {{ kioskName }}
                                 </h1>
                             </div>
                         </div>
 
                         <details class="relative sm:hidden">
                             <summary
-                                class="list-none cursor-pointer rounded-xl border border-amber-200 bg-white p-2 text-slate-800 transition hover:bg-amber-100"
+                                class="list-none cursor-pointer rounded-xl border border-[var(--pos-border)] bg-white p-2 text-slate-800 transition hover:bg-[var(--pos-surface)]"
                             >
                                 <span class="inline-flex h-6 w-6 items-center justify-center">
                                     <svg
@@ -249,8 +291,8 @@ const processCheckout = () => {
                                     </svg>
                                 </span>
                             </summary>
-                            <div class="absolute right-0 z-40 mt-2 w-64 rounded-xl border border-amber-200 bg-white p-2 shadow-lg">
-                                <div class="rounded-lg bg-amber-50 px-3 py-2">
+                            <div class="absolute right-0 z-40 mt-2 w-64 rounded-xl border border-[var(--pos-border)] bg-white p-2 shadow-lg">
+                                <div class="rounded-lg bg-[var(--pos-background)] px-3 py-2">
                                     <p class="truncate text-sm font-semibold text-slate-900">
                                         {{ currentUser.name }}
                                     </p>
@@ -262,7 +304,7 @@ const processCheckout = () => {
                                     :href="route('logout')"
                                     method="post"
                                     as="button"
-                                    class="mt-2 w-full rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                                    class="mt-2 w-full rounded-lg bg-[var(--pos-primary)] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)]"
                                 >
                                     Logout
                                 </Link>
@@ -271,14 +313,14 @@ const processCheckout = () => {
                     </div>
 
                     <div class="order-2 grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:order-3 sm:ml-0 sm:flex sm:w-auto sm:gap-3">
-                        <div class="inline-flex min-w-0 items-center rounded-xl border border-amber-200 bg-white px-3 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm">
+                        <div class="inline-flex min-w-0 items-center rounded-xl border border-[var(--pos-border)] bg-white px-3 py-2 text-xs sm:px-4 sm:py-2.5 sm:text-sm">
                             <span class="text-slate-500">Total</span>
                             <span class="ml-2 font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
                         </div>
 
                         <button
                             @click="showCart = true"
-                            class="relative inline-flex items-center gap-2 rounded-xl bg-orange-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-500 sm:px-4 sm:py-2.5 sm:text-sm"
+                            class="relative inline-flex items-center gap-2 rounded-xl bg-[var(--pos-primary)] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] sm:px-4 sm:py-2.5 sm:text-sm"
                         >
                             Cart
                             <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-300 px-1 text-[10px] font-bold text-slate-900 sm:h-6 sm:min-w-6 sm:px-1.5 sm:text-xs">
@@ -288,7 +330,7 @@ const processCheckout = () => {
 
                         <details class="relative hidden sm:block">
                             <summary
-                                class="list-none cursor-pointer rounded-xl border border-amber-200 bg-white p-2 text-slate-800 transition hover:bg-amber-100 sm:p-2.5"
+                                class="list-none cursor-pointer rounded-xl border border-[var(--pos-border)] bg-white p-2 text-slate-800 transition hover:bg-[var(--pos-surface)] sm:p-2.5"
                             >
                                 <span class="inline-flex h-6 w-6 items-center justify-center">
                                     <svg
@@ -304,8 +346,8 @@ const processCheckout = () => {
                                     </svg>
                                 </span>
                             </summary>
-                            <div class="absolute right-0 z-40 mt-2 w-64 rounded-xl border border-amber-200 bg-white p-2 shadow-lg">
-                                <div class="rounded-lg bg-amber-50 px-3 py-2">
+                            <div class="absolute right-0 z-40 mt-2 w-64 rounded-xl border border-[var(--pos-border)] bg-white p-2 shadow-lg">
+                                <div class="rounded-lg bg-[var(--pos-background)] px-3 py-2">
                                     <p class="truncate text-sm font-semibold text-slate-900">
                                         {{ currentUser.name }}
                                     </p>
@@ -317,7 +359,7 @@ const processCheckout = () => {
                                     :href="route('logout')"
                                     method="post"
                                     as="button"
-                                    class="mt-2 w-full rounded-lg bg-orange-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                                    class="mt-2 w-full rounded-lg bg-[var(--pos-primary)] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)]"
                                 >
                                     Logout
                                 </Link>
@@ -334,7 +376,7 @@ const processCheckout = () => {
                                 v-model="searchQuery"
                                 type="text"
                                 placeholder="Search menu"
-                                class="block w-full rounded-xl border border-amber-300 bg-white py-2.5 pl-20 pr-4 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-100"
+                                class="block w-full rounded-xl border border-[var(--pos-border)] bg-white py-2.5 pl-20 pr-4 text-sm outline-none transition focus:border-[var(--pos-primary)] focus:ring-2 focus:ring-[var(--pos-surface)]"
                             />
                         </div>
                     </div>
@@ -343,7 +385,7 @@ const processCheckout = () => {
 
             <main class="relative mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 2xl:px-12">
                 <section class="grid items-start gap-6 lg:grid-cols-[240px,1fr]">
-                    <aside class="flex h-[280px] flex-col rounded-2xl border border-amber-200 bg-white p-4 shadow-sm sm:h-[320px] lg:h-[360px]">
+                    <aside class="flex h-[280px] flex-col rounded-2xl border border-[var(--pos-border)] bg-white p-4 shadow-sm sm:h-[320px] lg:h-[360px]">
                         <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
                             Categories
                         </h3>
@@ -355,8 +397,8 @@ const processCheckout = () => {
                                 :class="[
                                     'w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition',
                                     selectedCategory === category
-                                        ? 'bg-orange-600 text-white'
-                                        : 'bg-amber-100 text-slate-700 hover:bg-amber-200',
+                                        ? 'bg-[var(--pos-primary)] text-white'
+                                        : 'bg-[var(--pos-surface)] text-slate-700 hover:brightness-95',
                                 ]"
                             >
                                 {{ category }}
@@ -374,9 +416,9 @@ const processCheckout = () => {
                             <article
                                 v-for="item in paginatedItems"
                                 :key="item.id"
-                                class="group overflow-hidden rounded-3xl border border-amber-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                                class="group overflow-hidden rounded-3xl border border-[var(--pos-border)] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                             >
-                                <div class="relative h-64 overflow-hidden bg-amber-100">
+                                <div class="relative h-64 overflow-hidden bg-[var(--pos-surface)]">
                                     <img
                                         :src="item.image"
                                         :alt="item.name"
@@ -403,7 +445,7 @@ const processCheckout = () => {
                                         </p>
                                         <button
                                             @click="addToCart(item)"
-                                            class="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
+                                            class="rounded-xl bg-[var(--pos-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)]"
                                         >
                                             Add
                                         </button>
@@ -416,7 +458,7 @@ const processCheckout = () => {
                             <button
                                 @click="goToPage(currentPage - 1)"
                                 :disabled="currentPage === 1"
-                                class="rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                class="rounded-xl border border-[var(--pos-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-[var(--pos-surface)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Previous
                             </button>
@@ -426,7 +468,7 @@ const processCheckout = () => {
                             <button
                                 @click="goToPage(currentPage + 1)"
                                 :disabled="currentPage === totalPages"
-                                class="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 Next
                             </button>

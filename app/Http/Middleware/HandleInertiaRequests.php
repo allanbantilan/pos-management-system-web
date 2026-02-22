@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AppSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -35,9 +37,36 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $defaultScheme = (string) config('branding.default_scheme', 'sunset');
+        $schemes = (array) config('branding.schemes', []);
+        $defaultPalette = $schemes[$defaultScheme] ?? [
+            'primary_color' => '#ea580c',
+            'primary_hover_color' => '#f97316',
+            'surface_color' => '#fef3c7',
+            'background_color' => '#fffbeb',
+            'border_color' => '#fde68a',
+        ];
+
+        $branding = [
+            'pos_name' => 'Fast Food Kiosk',
+            'color_scheme' => $defaultScheme,
+            'logo_url' => null,
+            'primary_color' => (string) $defaultPalette['primary_color'],
+            'primary_hover_color' => (string) $defaultPalette['primary_hover_color'],
+            'surface_color' => (string) $defaultPalette['surface_color'],
+            'background_color' => (string) $defaultPalette['background_color'],
+            'border_color' => (string) $defaultPalette['border_color'],
+        ];
+
+        if (Schema::hasTable('app_settings')) {
+            $settings = AppSetting::current();
+            $branding = $settings->resolvedTheme();
+        }
+
         return array_merge(parent::share($request), [
             // Share app name from config
             'appName' => config('app.name', 'Pos System'),
+            'branding' => $branding,
 
             'auth' => [
                 'user' => $request->user(),
