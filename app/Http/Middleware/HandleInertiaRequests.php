@@ -37,7 +37,7 @@ class HandleInertiaRequests extends Middleware
     {
         return array_merge(parent::share($request), [
             // Share app name from config
-            'appName' => config('app.name', 'Laravel'),
+            'appName' => config('app.name', 'Pos System'),
 
             'auth' => [
                 'user' => $request->user(),

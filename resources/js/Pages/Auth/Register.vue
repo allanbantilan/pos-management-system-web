@@ -3,7 +3,7 @@ import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
 import { computed, ref } from "vue";
 
 const page = usePage();
-const appName = computed(() => page.props.appName || "POS Management");
+const appName = computed(() => page.props.appName || "Pos System");
 
 const form = useForm({
     name: "",

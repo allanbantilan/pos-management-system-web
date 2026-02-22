@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandName('Pos System')
             ->authGuard('backend')
             ->login()
             ->colors([

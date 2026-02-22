@@ -8,7 +8,7 @@ const props = defineProps({
 });
 
 const page = usePage();
-const appName = computed(() => page.props.appName || "POS Management");
+const appName = computed(() => page.props.appName || "Pos System");
 const showPassword = ref(false);
 
 const form = useForm({
