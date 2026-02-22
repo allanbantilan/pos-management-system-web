@@ -164,7 +164,7 @@ const processCheckout = () => {
             ></div>
 
             <header class="sticky top-0 z-30 border-b border-amber-200 bg-white/90 backdrop-blur">
-                <div class="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
+                <div class="mx-auto flex w-full flex-wrap items-center gap-4 px-4 py-4 sm:px-6 lg:px-10 2xl:px-12">
                     <div class="flex min-w-0 flex-1 items-center gap-3">
                         <div class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-600 text-white shadow-lg">
                             <span class="text-sm font-bold">K</span>
@@ -245,8 +245,8 @@ const processCheckout = () => {
                 </div>
             </header>
 
-            <main class="relative mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <section class="grid items-start gap-6 lg:grid-cols-[220px,1fr]">
+            <main class="relative mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 2xl:px-12">
+                <section class="grid items-start gap-6 lg:grid-cols-[240px,1fr]">
                     <aside class="flex h-[280px] flex-col rounded-2xl border border-amber-200 bg-white p-4 shadow-sm sm:h-[320px] lg:h-[360px]">
                         <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
                             Categories
@@ -274,7 +274,7 @@ const processCheckout = () => {
                                 {{ selectedCategory === "All" ? "Menu" : selectedCategory }}
                             </h2>
                         </div>
-                        <div v-if="paginatedItems.length > 0" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                        <div v-if="paginatedItems.length > 0" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                             <article
                                 v-for="item in paginatedItems"
                                 :key="item.id"
