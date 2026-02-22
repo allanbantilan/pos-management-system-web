@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DeleteUserForm from '@/Pages/Profile/Partials/DeleteUserForm.vue';
 import LogoutOtherBrowserSessionsForm from '@/Pages/Profile/Partials/LogoutOtherBrowserSessionsForm.vue';
+import ReceiptsTable from '@/Pages/Profile/Partials/ReceiptsTable.vue';
 import SectionBorder from '@/Components/SectionBorder.vue';
 import TwoFactorAuthenticationForm from '@/Pages/Profile/Partials/TwoFactorAuthenticationForm.vue';
 import UpdatePasswordForm from '@/Pages/Profile/Partials/UpdatePasswordForm.vue';
@@ -43,6 +44,10 @@ defineProps({
 
                     <SectionBorder />
                 </div>
+
+                <ReceiptsTable :receipts="$page.props.profileReceipts || []" class="mt-10 sm:mt-0" />
+
+                <SectionBorder />
 
                 <LogoutOtherBrowserSessionsForm :sessions="sessions" class="mt-10 sm:mt-0" />
 

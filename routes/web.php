@@ -9,6 +9,10 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+Route::get('/pos/checkout/callback/{transaction}/{result}', [PosItemController::class, 'mayaCallback'])
+    ->whereIn('result', ['success', 'failed', 'cancelled'])
+    ->name('pos.checkout.callback');
+
 // Guest routes (not authenticated)
 Route::middleware('guest')->group(function () {
     // Login

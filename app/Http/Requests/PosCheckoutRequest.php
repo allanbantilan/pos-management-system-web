@@ -25,7 +25,7 @@ class PosCheckoutRequest extends FormRequest
             'items' => 'required|array',
             'items.*.id' => 'required|integer|exists:pos_items,id',
             'items.*.quantity' => 'required|integer|min:1',
-            'payment_method' => 'nullable|string|max:50',
+            'payment_method' => 'required|string|in:cash,maya_checkout',
             'notes' => 'nullable|string|max:1000',
         ];
     }

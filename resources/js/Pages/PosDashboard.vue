@@ -1,6 +1,6 @@
 <script setup>
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 
 const props = defineProps({
@@ -25,12 +25,30 @@ const props = defineProps({
             category: "All",
         }),
     },
+    checkoutResult: {
+        type: String,
+        default: "",
+    },
+    checkoutReceipt: {
+        type: Object,
+        default: null,
+    },
+    recentReceipts: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const selectedCategory = ref(props.filters?.category || "All");
 const searchQuery = ref(props.filters?.search || "");
 const cart = ref([]);
 const showCart = ref(false);
+const showCheckoutDialog = ref(false);
+const selectedPaymentMethod = ref("cash");
+const isProcessingCheckout = ref(false);
+const receiptData = ref(null);
+const showReceiptModal = ref(false);
+const showFailedPaymentModal = ref(false);
 const showToast = ref(false);
 const toastMessage = ref("");
 const toastTone = ref("success");
@@ -87,6 +105,33 @@ const currentUser = computed(() => ({
     name: props.auth?.user?.name ?? "Cashier",
     email: props.auth?.user?.email ?? "",
 }));
+const recentReceiptsList = ref([...(props.recentReceipts ?? [])]);
+const recentReceipts = computed(() => recentReceiptsList.value);
+const formatReceiptDate = (value) => {
+    if (!value) {
+        return "-";
+    }
+
+    return new Date(value).toLocaleString();
+};
+const upsertRecentReceipt = (receipt) => {
+    if (!receipt?.receipt_number) {
+        return;
+    }
+
+    const normalized = {
+        id: receipt.id ?? receipt.receipt_number,
+        receipt_number: receipt.receipt_number,
+        payment_method: receipt.payment_method ?? "cash",
+        total: toNumber(receipt.total),
+        issued_at: receipt.date ?? receipt.issued_at ?? new Date().toISOString(),
+    };
+
+    recentReceiptsList.value = [
+        normalized,
+        ...recentReceiptsList.value.filter((item) => item.receipt_number !== normalized.receipt_number),
+    ].slice(0, 5);
+};
 
 const paginatedItems = computed(() => props.items?.data ?? []);
 const currentPage = computed(() => props.items?.current_page ?? 1);
@@ -218,11 +263,98 @@ const clearCart = () => {
     cart.value = [];
 };
 
-const processCheckout = () => {
-    alert(`Processing payment of ${formatMoney(grandTotal.value)}`);
-    clearCart();
-    showCart.value = false;
+const resetCheckoutUri = () => {
+    const url = new URL(window.location.href);
+    const hadReceipt = url.searchParams.has("receipt");
+    const hadCheckoutResult = url.searchParams.has("checkout_result");
+
+    if (!hadReceipt && !hadCheckoutResult) {
+        return;
+    }
+
+    url.searchParams.delete("receipt");
+    url.searchParams.delete("checkout_result");
+
+    const cleanUrl = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState({}, "", cleanUrl);
 };
+
+const closeReceiptModal = () => {
+    showReceiptModal.value = false;
+    resetCheckoutUri();
+};
+
+const closeFailedPaymentModal = () => {
+    showFailedPaymentModal.value = false;
+    resetCheckoutUri();
+};
+
+const processCheckout = () => {
+    if (cart.value.length === 0 || isProcessingCheckout.value) {
+        return;
+    }
+
+    selectedPaymentMethod.value = "cash";
+    showCheckoutDialog.value = true;
+};
+
+const completeCheckout = async () => {
+    if (cart.value.length === 0 || isProcessingCheckout.value) {
+        return;
+    }
+
+    isProcessingCheckout.value = true;
+
+    try {
+        const response = await window.axios.post(route("pos.checkout"), {
+            payment_method: selectedPaymentMethod.value,
+            items: cart.value.map((item) => ({
+                id: item.id,
+                quantity: item.quantity,
+            })),
+        });
+
+        if (response?.data?.redirect_url) {
+            window.location.href = response.data.redirect_url;
+            return;
+        }
+
+        if (response?.data?.receipt) {
+            receiptData.value = response.data.receipt;
+            showReceiptModal.value = true;
+            showCart.value = false;
+            showCheckoutDialog.value = false;
+            clearCart();
+            upsertRecentReceipt(response.data.receipt);
+            showToastMessage("Payment successful");
+            return;
+        }
+
+        showToastMessage("Checkout initialized", "success");
+    } catch (error) {
+        const message = error?.response?.data?.message || error?.response?.data?.errors?.payment_method?.[0];
+        showToastMessage(message || "Checkout failed", "danger");
+    } finally {
+        isProcessingCheckout.value = false;
+    }
+};
+
+onMounted(() => {
+    if (props.checkoutReceipt) {
+        receiptData.value = props.checkoutReceipt;
+        showReceiptModal.value = true;
+        upsertRecentReceipt(props.checkoutReceipt);
+    }
+
+    if (props.checkoutResult === "success") {
+        showToastMessage("Payment successful");
+    }
+
+    if (props.checkoutResult === "failed") {
+        showFailedPaymentModal.value = true;
+        showToastMessage("Payment was not completed", "danger");
+    }
+});
 </script>
 
 <template>
@@ -300,6 +432,29 @@ const processCheckout = () => {
                                         {{ currentUser.email }}
                                     </p>
                                 </div>
+                                <div class="mt-2 rounded-lg border border-[var(--pos-border)] p-2">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent receipts</p>
+                                    <div
+                                        v-if="recentReceipts.length > 0"
+                                        :class="[
+                                            'mt-2 space-y-1.5',
+                                            recentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
+                                        ]"
+                                    >
+                                        <button
+                                            v-for="receipt in recentReceipts"
+                                            :key="`mobile-${receipt.id}`"
+                                            @click="router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
+                                            class="w-full rounded-md border border-slate-200 px-2 py-1.5 text-left transition hover:bg-slate-50"
+                                        >
+                                            <p class="truncate text-xs font-semibold text-slate-800">{{ receipt.receipt_number }}</p>
+                                            <p class="text-[11px] text-slate-600">
+                                                {{ formatMoney(receipt.total) }} | {{ formatReceiptDate(receipt.issued_at) }}
+                                            </p>
+                                        </button>
+                                    </div>
+                                    <p v-else class="mt-2 text-xs text-slate-500">No receipts yet.</p>
+                                </div>
                                 <Link
                                     :href="route('logout')"
                                     method="post"
@@ -354,6 +509,29 @@ const processCheckout = () => {
                                     <p class="truncate text-xs text-slate-600">
                                         {{ currentUser.email }}
                                     </p>
+                                </div>
+                                <div class="mt-2 rounded-lg border border-[var(--pos-border)] p-2">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent receipts</p>
+                                    <div
+                                        v-if="recentReceipts.length > 0"
+                                        :class="[
+                                            'mt-2 space-y-1.5',
+                                            recentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
+                                        ]"
+                                    >
+                                        <button
+                                            v-for="receipt in recentReceipts"
+                                            :key="`desktop-${receipt.id}`"
+                                            @click="router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
+                                            class="w-full rounded-md border border-slate-200 px-2 py-1.5 text-left transition hover:bg-slate-50"
+                                        >
+                                            <p class="truncate text-xs font-semibold text-slate-800">{{ receipt.receipt_number }}</p>
+                                            <p class="text-[11px] text-slate-600">
+                                                {{ formatMoney(receipt.total) }} | {{ formatReceiptDate(receipt.issued_at) }}
+                                            </p>
+                                        </button>
+                                    </div>
+                                    <p v-else class="mt-2 text-xs text-slate-500">No receipts yet.</p>
                                 </div>
                                 <Link
                                     :href="route('logout')"
@@ -436,7 +614,6 @@ const processCheckout = () => {
                                         <h3 class="line-clamp-1 text-lg font-bold text-slate-900">
                                             {{ item.name }}
                                         </h3>
-                                        <p class="mt-1 text-sm text-slate-500">Stock: {{ item.stock }}</p>
                                     </div>
 
                                     <div class="flex items-center justify-between">
@@ -606,6 +783,151 @@ const processCheckout = () => {
                         </button>
                     </div>
                 </aside>
+            </Transition>
+
+            <Transition
+                enter-active-class="transition-opacity duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-200"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="showCheckoutDialog"
+                    class="fixed inset-0 z-[65] flex items-center justify-center bg-slate-900/50 p-4"
+                    @click.self="showCheckoutDialog = false"
+                >
+                    <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+                        <h3 class="text-lg font-semibold text-slate-900">Choose payment method</h3>
+                        <p class="mt-1 text-sm text-slate-600">
+                            Total: <span class="font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
+                        </p>
+
+                        <div class="mt-4 space-y-2">
+                            <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
+                                <span class="text-sm font-medium text-slate-800">Cash</span>
+                                <input v-model="selectedPaymentMethod" type="radio" value="cash" class="h-4 w-4" />
+                            </label>
+                            <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
+                                <span class="text-sm font-medium text-slate-800">PayMaya (Card / E-Wallet)</span>
+                                <input v-model="selectedPaymentMethod" type="radio" value="maya_checkout" class="h-4 w-4" />
+                            </label>
+                        </div>
+
+                        <div class="mt-5 grid grid-cols-2 gap-3">
+                            <button
+                                @click="showCheckoutDialog = false"
+                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                :disabled="isProcessingCheckout"
+                                @click="completeCheckout"
+                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {{ isProcessingCheckout ? "Processing..." : "Pay now" }}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </Transition>
+
+            <Transition
+                enter-active-class="transition-opacity duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-200"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="showFailedPaymentModal"
+                    class="fixed inset-0 z-[69] flex items-center justify-center bg-slate-900/60 p-4"
+                    @click.self="closeFailedPaymentModal"
+                >
+                    <section class="w-full max-w-md rounded-2xl border border-rose-200 bg-white shadow-xl">
+                        <div class="border-b border-rose-100 px-5 py-4">
+                            <h3 class="text-lg font-semibold text-rose-700">Payment Failed</h3>
+                            <p class="mt-1 text-sm text-slate-600">
+                                The payment was not completed. Please try again.
+                            </p>
+                        </div>
+
+                        <div class="px-5 py-4">
+                            <button
+                                @click="closeFailedPaymentModal"
+                                class="w-full rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </Transition>
+
+            <Transition
+                enter-active-class="transition-opacity duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-200"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="showReceiptModal && receiptData"
+                    class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-4"
+                    @click.self="closeReceiptModal"
+                >
+                    <section class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+                        <div class="border-b border-slate-200 px-5 py-4">
+                            <h3 class="text-lg font-semibold text-slate-900">Receipt</h3>
+                            <p class="text-xs text-slate-500">{{ receiptData.receipt_number }} | {{ receiptData.date }}</p>
+                        </div>
+
+                        <div class="max-h-[60vh] space-y-3 overflow-y-auto px-5 py-4">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-slate-500">Payment</span>
+                                <span class="font-semibold uppercase text-slate-900">{{ receiptData.payment_method }}</span>
+                            </div>
+                            <div
+                                v-for="item in receiptData.items"
+                                :key="`${item.name}-${item.quantity}`"
+                                class="flex items-center justify-between border-b border-dashed border-slate-200 pb-2 text-sm"
+                            >
+                                <p class="text-slate-700">{{ item.name }} x{{ item.quantity }}</p>
+                                <p class="font-semibold text-slate-900">{{ formatMoney(item.subtotal) }}</p>
+                            </div>
+
+                            <div class="space-y-1.5 rounded-xl bg-slate-50 p-3 text-sm">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-slate-500">Subtotal</span>
+                                    <span class="text-slate-900">{{ formatMoney(receiptData.subtotal) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between border-t border-slate-200 pt-1 font-semibold">
+                                    <span class="text-slate-800">Total</span>
+                                    <span class="text-slate-900">{{ formatMoney(receiptData.total) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 border-t border-slate-200 px-5 py-4">
+                            <button
+                                @click="closeReceiptModal"
+                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                            >
+                                Close
+                            </button>
+                            <button
+                                @click="window.print()"
+                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)]"
+                            >
+                                Print
+                            </button>
+                        </div>
+                    </section>
+                </div>
             </Transition>
         </div>
     </AuthenticatedLayout>

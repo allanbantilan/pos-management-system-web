@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\AppSetting;
+use App\Models\Receipt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
@@ -63,10 +64,48 @@ class HandleInertiaRequests extends Middleware
             $branding = $settings->resolvedTheme();
         }
 
+        $profileReceipts = [];
+        if (
+            $request->user() !== null
+            && $request->routeIs('profile.show')
+            && Schema::hasTable('receipts')
+        ) {
+            $profileReceipts = Receipt::query()
+                ->where('user_id', $request->user()->id)
+                ->latest('issued_at')
+                ->latest('id')
+                ->limit(100)
+                ->get([
+                    'id',
+                    'transaction_id',
+                    'receipt_number',
+                    'payment_method',
+                    'status',
+                    'total',
+                    'provider_payment_id',
+                    'provider_reference',
+                    'issued_at',
+                ])
+                ->map(fn (Receipt $receipt): array => [
+                    'id' => $receipt->id,
+                    'transaction_id' => $receipt->transaction_id,
+                    'receipt_number' => $receipt->receipt_number,
+                    'payment_method' => $receipt->payment_method,
+                    'status' => $receipt->status,
+                    'total' => (float) $receipt->total,
+                    'provider_payment_id' => $receipt->provider_payment_id,
+                    'provider_reference' => $receipt->provider_reference,
+                    'issued_at' => optional($receipt->issued_at)->toDateTimeString(),
+                ])
+                ->values()
+                ->all();
+        }
+
         return array_merge(parent::share($request), [
             // Share app name from config
             'appName' => config('app.name', 'Pos System'),
             'branding' => $branding,
+            'profileReceipts' => $profileReceipts,
 
             'auth' => [
                 'user' => $request->user(),
