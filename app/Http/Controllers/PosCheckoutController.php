@@ -39,8 +39,23 @@ class PosCheckoutController extends Controller
 
     private function processCashCheckout(PosCheckoutRequest $request): JsonResponse
     {
-        $transaction = DB::transaction(function () use ($request): Transaction {
+        $cashMetadata = [];
+
+        $transaction = DB::transaction(function () use ($request, &$cashMetadata): Transaction {
             $checkoutData = $this->buildCheckoutData((array) $request->input('items'));
+            $cashReceived = round((float) $request->input('cash_received'), 2);
+
+            if ($cashReceived < (float) $checkoutData['total']) {
+                throw ValidationException::withMessages([
+                    'cash_received' => 'Cash received is not enough for this sale.',
+                ]);
+            }
+
+            $cashMetadata = [
+                'cash_received' => $cashReceived,
+                'change' => round($cashReceived - (float) $checkoutData['total'], 2),
+            ];
+
             $transaction = $this->createTransaction(
                 $request->user()->id,
                 $checkoutData,
@@ -60,12 +75,12 @@ class PosCheckoutController extends Controller
             return $transaction->fresh(['items.item']);
         });
 
-        $this->receiptService->persistSnapshot($transaction);
+        $this->receiptService->persistSnapshot($transaction, $cashMetadata);
 
         return response()->json([
             'success' => true,
             'message' => 'Cash payment processed successfully.',
-            'receipt' => $this->receiptService->buildPayload($transaction),
+            'receipt' => $this->receiptService->buildPayload($transaction, $cashMetadata),
         ]);
     }
 

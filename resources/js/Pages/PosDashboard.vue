@@ -44,6 +44,7 @@ const searchQuery = ref(props.filters?.search || "");
 const cart = ref([]);
 const showCart = ref(false);
 const showCheckoutDialog = ref(false);
+const showCashCalculatorModal = ref(false);
 const selectedPaymentMethod = ref("cash");
 const isProcessingCheckout = ref(false);
 const receiptData = ref(null);
@@ -52,6 +53,8 @@ const showFailedPaymentModal = ref(false);
 const showToast = ref(false);
 const toastMessage = ref("");
 const toastTone = ref("success");
+const cashReceivedInput = ref("");
+const cashCalculatorError = ref("");
 let searchDebounceTimer = null;
 let toastTimer = null;
 const page = usePage();
@@ -122,6 +125,20 @@ const currentUser = computed(() => ({
 }));
 const recentReceiptsList = ref([...(props.recentReceipts ?? [])]);
 const recentReceipts = computed(() => recentReceiptsList.value);
+const receiptSearchQuery = ref("");
+const filteredRecentReceipts = computed(() => {
+    const query = receiptSearchQuery.value.trim().toLowerCase();
+
+    if (!query) {
+        return recentReceipts.value;
+    }
+
+    return recentReceipts.value.filter((receipt) =>
+        String(receipt?.receipt_number ?? "")
+            .toLowerCase()
+            .includes(query),
+    );
+});
 const formatReceiptDate = (value) => {
     if (!value) {
         return "-";
@@ -215,6 +232,11 @@ const cartItemCount = computed(() =>
 );
 
 const grandTotal = computed(() => cartTotal.value);
+const cashReceivedAmount = computed(() => toNumber(cashReceivedInput.value));
+const cashChangeAmount = computed(() => cashReceivedAmount.value - grandTotal.value);
+const isCashSufficient = computed(
+    () => cashReceivedAmount.value >= grandTotal.value && grandTotal.value > 0,
+);
 
 const showToastMessage = (message, tone = "success") => {
     toastMessage.value = message;
@@ -310,10 +332,72 @@ const processCheckout = () => {
     }
 
     selectedPaymentMethod.value = "cash";
+    resetCashCalculator();
     showCheckoutDialog.value = true;
 };
 
-const completeCheckout = async () => {
+const resetCashCalculator = () => {
+    cashReceivedInput.value = "";
+    cashCalculatorError.value = "";
+};
+
+const appendCashInput = (value) => {
+    if (value === ".") {
+        if (cashReceivedInput.value.includes(".")) {
+            return;
+        }
+
+        cashReceivedInput.value = cashReceivedInput.value === "" ? "0." : `${cashReceivedInput.value}.`;
+        return;
+    }
+
+    cashReceivedInput.value = `${cashReceivedInput.value}${value}`;
+};
+
+const backspaceCashInput = () => {
+    cashReceivedInput.value = cashReceivedInput.value.slice(0, -1);
+};
+
+const clearCashInput = () => {
+    cashReceivedInput.value = "";
+    cashCalculatorError.value = "";
+};
+
+const setQuickCashAmount = (amount) => {
+    cashReceivedInput.value = toNumber(amount).toFixed(2);
+    cashCalculatorError.value = "";
+};
+
+const closeCashCalculatorModal = () => {
+    showCashCalculatorModal.value = false;
+    cashCalculatorError.value = "";
+};
+
+const proceedCheckout = () => {
+    if (selectedPaymentMethod.value === "cash") {
+        resetCashCalculator();
+        showCheckoutDialog.value = false;
+        showCashCalculatorModal.value = true;
+        return;
+    }
+
+    completeCheckout();
+};
+
+const confirmCashCheckout = () => {
+    if (!isCashSufficient.value) {
+        cashCalculatorError.value = "Cash received is not enough for this sale.";
+        return;
+    }
+
+    cashCalculatorError.value = "";
+    completeCheckout({
+        cashReceived: cashReceivedAmount.value,
+        change: cashChangeAmount.value,
+    });
+};
+
+const completeCheckout = async (cashMeta = null) => {
     if (cart.value.length === 0 || isProcessingCheckout.value) {
         return;
     }
@@ -327,6 +411,12 @@ const completeCheckout = async () => {
                 id: item.id,
                 quantity: item.quantity,
             })),
+            ...(selectedPaymentMethod.value === "cash" && cashMeta
+                ? {
+                      cash_received: cashMeta.cashReceived,
+                      change: cashMeta.change,
+                  }
+                : {}),
         });
 
         if (response?.data?.redirect_url) {
@@ -335,12 +425,25 @@ const completeCheckout = async () => {
         }
 
         if (response?.data?.receipt) {
-            receiptData.value = response.data.receipt;
+            const receiptPayload = {
+                ...response.data.receipt,
+                cash_received:
+                    selectedPaymentMethod.value === "cash" && cashMeta
+                        ? cashMeta.cashReceived
+                        : response.data.receipt.cash_received,
+                change:
+                    selectedPaymentMethod.value === "cash" && cashMeta
+                        ? cashMeta.change
+                        : response.data.receipt.change,
+            };
+
+            receiptData.value = receiptPayload;
             showReceiptModal.value = true;
             showCart.value = false;
             showCheckoutDialog.value = false;
+            showCashCalculatorModal.value = false;
             clearCart();
-            upsertRecentReceipt(response.data.receipt);
+            upsertRecentReceipt(receiptPayload);
             showToastMessage("Payment successful");
             return;
         }
@@ -450,15 +553,21 @@ onMounted(() => {
                                 </div>
                                 <div class="mt-2 rounded-lg border border-[var(--pos-border)] p-2">
                                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent receipts</p>
+                                    <input
+                                        v-model="receiptSearchQuery"
+                                        type="text"
+                                        placeholder="Search receipt #"
+                                        class="mt-2 w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                    />
                                     <div
-                                        v-if="recentReceipts.length > 0"
+                                        v-if="filteredRecentReceipts.length > 0"
                                         :class="[
                                             'mt-2 space-y-1.5',
-                                            recentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
+                                            filteredRecentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
                                         ]"
                                     >
                                         <button
-                                            v-for="receipt in recentReceipts"
+                                            v-for="receipt in filteredRecentReceipts"
                                             :key="`mobile-${receipt.id}`"
                                             @click="router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
                                             class="w-full rounded-md border border-slate-200 px-2 py-1.5 text-left transition hover:bg-slate-50"
@@ -469,7 +578,9 @@ onMounted(() => {
                                             </p>
                                         </button>
                                     </div>
-                                    <p v-else class="mt-2 text-xs text-slate-500">No receipts yet.</p>
+                                    <p v-else class="mt-2 text-xs text-slate-500">
+                                        {{ receiptSearchQuery ? "No receipts found." : "No receipts yet." }}
+                                    </p>
                                 </div>
                                 <Link
                                     :href="route('logout')"
@@ -528,15 +639,21 @@ onMounted(() => {
                                 </div>
                                 <div class="mt-2 rounded-lg border border-[var(--pos-border)] p-2">
                                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent receipts</p>
+                                    <input
+                                        v-model="receiptSearchQuery"
+                                        type="text"
+                                        placeholder="Search receipt #"
+                                        class="mt-2 w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                    />
                                     <div
-                                        v-if="recentReceipts.length > 0"
+                                        v-if="filteredRecentReceipts.length > 0"
                                         :class="[
                                             'mt-2 space-y-1.5',
-                                            recentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
+                                            filteredRecentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
                                         ]"
                                     >
                                         <button
-                                            v-for="receipt in recentReceipts"
+                                            v-for="receipt in filteredRecentReceipts"
                                             :key="`desktop-${receipt.id}`"
                                             @click="router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
                                             class="w-full rounded-md border border-slate-200 px-2 py-1.5 text-left transition hover:bg-slate-50"
@@ -547,7 +664,9 @@ onMounted(() => {
                                             </p>
                                         </button>
                                     </div>
-                                    <p v-else class="mt-2 text-xs text-slate-500">No receipts yet.</p>
+                                    <p v-else class="mt-2 text-xs text-slate-500">
+                                        {{ receiptSearchQuery ? "No receipts found." : "No receipts yet." }}
+                                    </p>
                                 </div>
                                 <Link
                                     :href="route('logout')"
@@ -840,10 +959,111 @@ onMounted(() => {
                             </button>
                             <button
                                 :disabled="isProcessingCheckout"
-                                @click="completeCheckout"
+                                @click="proceedCheckout"
                                 class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                {{ isProcessingCheckout ? "Processing..." : "Pay now" }}
+                                {{
+                                    isProcessingCheckout
+                                        ? "Processing..."
+                                        : selectedPaymentMethod === "cash"
+                                          ? "Next"
+                                          : "Pay now"
+                                }}
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            </Transition>
+
+            <Transition
+                enter-active-class="transition-opacity duration-200"
+                enter-from-class="opacity-0"
+                enter-to-class="opacity-100"
+                leave-active-class="transition-opacity duration-200"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0"
+            >
+                <div
+                    v-if="showCashCalculatorModal"
+                    class="fixed inset-0 z-[67] flex items-center justify-center bg-slate-900/50 p-4"
+                    @click.self="closeCashCalculatorModal"
+                >
+                    <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+                        <h3 class="text-lg font-semibold text-slate-900">Cash Payment</h3>
+                        <p class="mt-1 text-sm text-slate-600">
+                            Total due: <span class="font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
+                        </p>
+
+                        <div class="mt-4 space-y-3">
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                <p class="text-xs text-slate-500">Cash received</p>
+                                <p class="mt-1 text-2xl font-semibold text-slate-900">
+                                    {{ formatMoney(cashReceivedAmount) }}
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <button
+                                    v-for="amount in [grandTotal, 500, 1000]"
+                                    :key="`quick-${amount}`"
+                                    type="button"
+                                    @click="setQuickCashAmount(amount)"
+                                    class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                >
+                                    {{ formatMoney(amount) }}
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <button
+                                    v-for="key in ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '⌫']"
+                                    :key="`cash-key-${key}`"
+                                    type="button"
+                                    @click="key === '⌫' ? backspaceCashInput() : appendCashInput(key)"
+                                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
+                                >
+                                    {{ key }}
+                                </button>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-200 p-3">
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-slate-600">Change</span>
+                                    <span
+                                        :class="[
+                                            'font-semibold',
+                                            cashChangeAmount < 0 ? 'text-rose-600' : 'text-emerald-600',
+                                        ]"
+                                    >
+                                        {{ formatMoney(cashChangeAmount) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <p v-if="cashCalculatorError" class="text-xs font-medium text-rose-600">
+                                {{ cashCalculatorError }}
+                            </p>
+                        </div>
+
+                        <div class="mt-5 grid grid-cols-3 gap-3">
+                            <button
+                                @click="clearCashInput"
+                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                            >
+                                Clear
+                            </button>
+                            <button
+                                @click="showCashCalculatorModal = false; showCheckoutDialog = true"
+                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                            >
+                                Back
+                            </button>
+                            <button
+                                :disabled="isProcessingCheckout || !isCashSufficient"
+                                @click="confirmCashCheckout"
+                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {{ isProcessingCheckout ? "Processing..." : "Confirm" }}
                             </button>
                         </div>
                     </section>
@@ -924,6 +1144,20 @@ onMounted(() => {
                                 <div class="flex items-center justify-between border-t border-slate-200 pt-1 font-semibold">
                                     <span class="text-slate-800">Total</span>
                                     <span class="text-slate-900">{{ formatMoney(receiptData.total) }}</span>
+                                </div>
+                                <div
+                                    v-if="receiptData.payment_method === 'cash' && receiptData.cash_received !== undefined"
+                                    class="flex items-center justify-between border-t border-slate-200 pt-1"
+                                >
+                                    <span class="text-slate-800">Cash Received</span>
+                                    <span class="text-slate-900">{{ formatMoney(receiptData.cash_received) }}</span>
+                                </div>
+                                <div
+                                    v-if="receiptData.payment_method === 'cash' && receiptData.change !== undefined"
+                                    class="flex items-center justify-between"
+                                >
+                                    <span class="text-slate-800">Change</span>
+                                    <span class="text-slate-900">{{ formatMoney(receiptData.change) }}</span>
                                 </div>
                             </div>
                         </div>

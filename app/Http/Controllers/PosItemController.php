@@ -84,21 +84,34 @@ class PosItemController extends Controller
             });
 
         $checkoutReceipt = null;
+        $transaction = null;
         $receiptNumber = trim((string) $request->input('receipt', ''));
         if ($receiptNumber !== '') {
-            $transaction = Transaction::query()
+            $receipt = Receipt::query()
                 ->where('receipt_number', $receiptNumber)
                 ->where('user_id', $request->user()->id)
-                ->with(['items.item'])
+                ->latest('issued_at')
+                ->latest('id')
                 ->first();
 
-            if ($transaction) {
+            if ($receipt && is_array($receipt->payload) && $receipt->payload !== []) {
+                $checkoutReceipt = $receipt->payload;
+            } else {
+                $transaction = Transaction::query()
+                    ->where('receipt_number', $receiptNumber)
+                    ->where('user_id', $request->user()->id)
+                    ->with(['items.item'])
+                    ->first();
+            }
+
+            if ($checkoutReceipt === null && $transaction) {
                 $checkoutReceipt = $this->receiptService->buildPayload($transaction);
             }
         }
 
         $recentReceipts = Receipt::query()
             ->where('user_id', $request->user()->id)
+            ->whereDate('issued_at', now()->toDateString())
             ->latest('issued_at')
             ->latest('id')
             ->limit(5)

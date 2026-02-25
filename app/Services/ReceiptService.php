@@ -10,11 +10,11 @@ class ReceiptService
     /**
      * @return array<string, mixed>
      */
-    public function buildPayload(Transaction $transaction): array
+    public function buildPayload(Transaction $transaction, array $metadata = []): array
     {
         $transaction->loadMissing(['items.item']);
 
-        return [
+        $payload = [
             'id' => $transaction->id,
             'receipt_number' => $transaction->receipt_number,
             'date' => optional($transaction->paid_at ?? $transaction->created_at)->toDateTimeString(),
@@ -33,15 +33,25 @@ class ReceiptService
                 ];
             })->values()->all(),
         ];
+
+        if (array_key_exists('cash_received', $metadata)) {
+            $payload['cash_received'] = round((float) $metadata['cash_received'], 2);
+        }
+
+        if (array_key_exists('change', $metadata)) {
+            $payload['change'] = round((float) $metadata['change'], 2);
+        }
+
+        return $payload;
     }
 
-    public function persistSnapshot(Transaction $transaction): void
+    public function persistSnapshot(Transaction $transaction, array $metadata = []): void
     {
         if ($transaction->status !== 'completed') {
             return;
         }
 
-        $payload = $this->buildPayload($transaction);
+        $payload = $this->buildPayload($transaction, $metadata);
 
         Receipt::query()->updateOrCreate(
             ['transaction_id' => $transaction->id],
