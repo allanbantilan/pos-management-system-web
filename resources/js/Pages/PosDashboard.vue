@@ -2,6 +2,15 @@
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import ToastMessage from "./PosDashboard/ToastMessage.vue";
+import RecentReceiptsPanel from "./PosDashboard/RecentReceiptsPanel.vue";
+import CategoriesSidebar from "./PosDashboard/CategoriesSidebar.vue";
+import CartDrawer from "./PosDashboard/CartDrawer.vue";
+import CheckoutDialog from "./PosDashboard/CheckoutDialog.vue";
+import CashCalculatorModal from "./PosDashboard/CashCalculatorModal.vue";
+import MayaQrModal from "./PosDashboard/MayaQrModal.vue";
+import FailedPaymentModal from "./PosDashboard/FailedPaymentModal.vue";
+import ReceiptModal from "./PosDashboard/ReceiptModal.vue";
 
 const props = defineProps({
     auth: Object,
@@ -486,24 +495,7 @@ onMounted(() => {
                 class="pointer-events-none absolute inset-0"
             ></div>
 
-            <Transition
-                enter-active-class="transition duration-200"
-                enter-from-class="translate-y-2 opacity-0"
-                enter-to-class="translate-y-0 opacity-100"
-                leave-active-class="transition duration-150"
-                leave-from-class="translate-y-0 opacity-100"
-                leave-to-class="translate-y-2 opacity-0"
-            >
-                <div
-                    v-if="showToast"
-                    :class="[
-                        'fixed bottom-4 right-4 z-[60] rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-lg',
-                        toastTone === 'danger' ? 'bg-rose-600' : 'bg-emerald-600',
-                    ]"
-                >
-                    {{ toastMessage }}
-                </div>
-            </Transition>
+            <ToastMessage :show="showToast" :tone="toastTone" :message="toastMessage" />
 
             <header class="sticky top-0 z-30 border-b border-[var(--pos-border)] bg-white/90 backdrop-blur">
                 <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 lg:px-10 2xl:px-12">
@@ -552,37 +544,14 @@ onMounted(() => {
                                         {{ currentUser.email }}
                                     </p>
                                 </div>
-                                <div class="mt-2 rounded-lg border border-[var(--pos-border)] p-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent receipts</p>
-                                    <input
-                                        v-model="receiptSearchQuery"
-                                        type="text"
-                                        placeholder="Search receipt #"
-                                        class="mt-2 w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                    />
-                                    <div
-                                        v-if="filteredRecentReceipts.length > 0"
-                                        :class="[
-                                            'mt-2 space-y-1.5',
-                                            filteredRecentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
-                                        ]"
-                                    >
-                                        <button
-                                            v-for="receipt in filteredRecentReceipts"
-                                            :key="`mobile-${receipt.id}`"
-                                            @click="router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
-                                            class="w-full rounded-md border border-slate-200 px-2 py-1.5 text-left transition hover:bg-slate-50"
-                                        >
-                                            <p class="truncate text-xs font-semibold text-slate-800">{{ receipt.receipt_number }}</p>
-                                            <p class="text-[11px] text-slate-600">
-                                                {{ formatMoney(receipt.total) }} | {{ formatReceiptDate(receipt.issued_at) }}
-                                            </p>
-                                        </button>
-                                    </div>
-                                    <p v-else class="mt-2 text-xs text-slate-500">
-                                        {{ receiptSearchQuery ? "No receipts found." : "No receipts yet." }}
-                                    </p>
-                                </div>
+                                <RecentReceiptsPanel
+                                    variant="mobile"
+                                    :receipts="filteredRecentReceipts"
+                                    v-model:searchQuery="receiptSearchQuery"
+                                    :formatMoney="formatMoney"
+                                    :formatReceiptDate="formatReceiptDate"
+                                    @select="(receipt) => router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
+                                />
                                 <Link
                                     :href="route('logout')"
                                     method="post"
@@ -638,37 +607,14 @@ onMounted(() => {
                                         {{ currentUser.email }}
                                     </p>
                                 </div>
-                                <div class="mt-2 rounded-lg border border-[var(--pos-border)] p-2">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Recent receipts</p>
-                                    <input
-                                        v-model="receiptSearchQuery"
-                                        type="text"
-                                        placeholder="Search receipt #"
-                                        class="mt-2 w-full rounded-md border border-slate-200 px-2 py-1.5 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200"
-                                    />
-                                    <div
-                                        v-if="filteredRecentReceipts.length > 0"
-                                        :class="[
-                                            'mt-2 space-y-1.5',
-                                            filteredRecentReceipts.length >= 5 ? 'max-h-56 overflow-y-auto pr-1' : '',
-                                        ]"
-                                    >
-                                        <button
-                                            v-for="receipt in filteredRecentReceipts"
-                                            :key="`desktop-${receipt.id}`"
-                                            @click="router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
-                                            class="w-full rounded-md border border-slate-200 px-2 py-1.5 text-left transition hover:bg-slate-50"
-                                        >
-                                            <p class="truncate text-xs font-semibold text-slate-800">{{ receipt.receipt_number }}</p>
-                                            <p class="text-[11px] text-slate-600">
-                                                {{ formatMoney(receipt.total) }} | {{ formatReceiptDate(receipt.issued_at) }}
-                                            </p>
-                                        </button>
-                                    </div>
-                                    <p v-else class="mt-2 text-xs text-slate-500">
-                                        {{ receiptSearchQuery ? "No receipts found." : "No receipts yet." }}
-                                    </p>
-                                </div>
+                                <RecentReceiptsPanel
+                                    variant="mobile"
+                                    :receipts="filteredRecentReceipts"
+                                    v-model:searchQuery="receiptSearchQuery"
+                                    :formatMoney="formatMoney"
+                                    :formatReceiptDate="formatReceiptDate"
+                                    @select="(receipt) => router.get(route('pos.dashboard', { receipt: receipt.receipt_number }))"
+                                />
                                 <Link
                                     :href="route('logout')"
                                     method="post"
@@ -699,40 +645,13 @@ onMounted(() => {
 
             <main class="relative mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 2xl:px-12">
                 <section class="grid items-start gap-6 lg:grid-cols-[240px,1fr]">
-                    <aside class="flex h-auto flex-col rounded-2xl border border-[var(--pos-border)] bg-white p-3 shadow-sm sm:h-[320px] sm:p-4 lg:h-[360px]">
-                        <div class="mb-2 flex min-h-7 items-center justify-between gap-2 sm:mb-3">
-                            <h3 class="flex items-center text-sm font-semibold uppercase leading-none tracking-wide text-slate-500">
-                                Categories
-                            </h3>
-                            <button
-                                type="button"
-                                @click="showCategories = !showCategories"
-                                class="inline-flex h-7 items-center rounded-md border border-slate-200 px-2 text-[11px] font-semibold leading-none text-slate-600 transition hover:bg-slate-100 sm:hidden"
-                            >
-                                {{ showCategories ? "Hide" : "Show" }}
-                            </button>
-                        </div>
-                        <div
-                            :class="[
-                                showCategories ? 'block' : 'hidden',
-                                'hide-scrollbar flex-1 space-y-2 overflow-y-auto pr-1 sm:block',
-                            ]"
-                        >
-                            <button
-                                v-for="category in categories"
-                                :key="category"
-                                @click="selectedCategory = category"
-                                :class="[
-                                    'w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition',
-                                    selectedCategory === category
-                                        ? 'bg-[var(--pos-primary)] text-white'
-                                        : 'bg-[var(--pos-surface)] text-slate-700 hover:brightness-95',
-                                ]"
-                            >
-                                {{ category }}
-                            </button>
-                        </div>
-                    </aside>
+                    <CategoriesSidebar
+                        :categories="categories"
+                        :selectedCategory="selectedCategory"
+                        :showCategories="showCategories"
+                        @toggle="showCategories = !showCategories"
+                        @select="(category) => (selectedCategory = category)"
+                    />
 
                     <section>
                         <div class="mb-4 flex items-center justify-between">
@@ -808,392 +727,62 @@ onMounted(() => {
                 </section>
             </main>
 
-            <Transition
-                enter-active-class="transition-opacity duration-200"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="transition-opacity duration-200"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
-                <div
-                    v-if="showCart"
-                    class="fixed inset-0 z-40 bg-slate-900/40"
-                    @click="showCart = false"
-                ></div>
-            </Transition>
+            <CartDrawer
+                :open="showCart"
+                :cart="cart"
+                :cartItemCount="cartItemCount"
+                :cartTotal="cartTotal"
+                :grandTotal="grandTotal"
+                :formatMoney="formatMoney"
+                :toNumber="toNumber"
+                @close="showCart = false"
+                @remove="removeFromCart"
+                @updateQty="updateQuantity"
+                @checkout="processCheckout"
+                @clear="clearCart"
+            />
 
-            <Transition
-                enter-active-class="transition duration-300"
-                enter-from-class="translate-x-full"
-                enter-to-class="translate-x-0"
-                leave-active-class="transition duration-300"
-                leave-from-class="translate-x-0"
-                leave-to-class="translate-x-full"
-            >
-                <aside
-                    v-if="showCart"
-                    class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white"
-                >
-                    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                        <div>
-                            <h2 class="text-lg font-semibold">Current sale</h2>
-                            <p class="text-sm text-slate-500">{{ cartItemCount }} item(s)</p>
-                        </div>
-                        <button
-                            @click="showCart = false"
-                            class="rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100"
-                        >
-                            Close
-                        </button>
-                    </div>
+            <CheckoutDialog
+                :open="showCheckoutDialog"
+                :selectedPaymentMethod="selectedPaymentMethod"
+                :isProcessing="isProcessingCheckout"
+                :grandTotal="grandTotal"
+                :formatMoney="formatMoney"
+                @close="showCheckoutDialog = false"
+                @proceed="proceedCheckout"
+                @update:selectedPaymentMethod="(value) => (selectedPaymentMethod = value)"
+            />
 
-                    <div class="flex-1 space-y-3 overflow-y-auto px-5 py-4">
-                        <div
-                            v-if="cart.length === 0"
-                            class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-500"
-                        >
-                            Cart is empty.
-                        </div>
+            <CashCalculatorModal
+                :open="showCashCalculatorModal"
+                :grandTotal="grandTotal"
+                :cashReceivedAmount="cashReceivedAmount"
+                :cashChangeAmount="cashChangeAmount"
+                :cashCalculatorError="cashCalculatorError"
+                :isProcessing="isProcessingCheckout"
+                :isCashSufficient="isCashSufficient"
+                :formatMoney="formatMoney"
+                @close="closeCashCalculatorModal"
+                @clear="clearCashInput"
+                @back="showCashCalculatorModal = false; showCheckoutDialog = true"
+                @confirm="confirmCashCheckout"
+                @append="appendCashInput"
+                @backspace="backspaceCashInput"
+                @setQuick="setQuickCashAmount"
+            />
 
-                        <article
-                            v-for="item in cart"
-                            :key="item.id"
-                            class="rounded-xl border border-slate-200 p-3"
-                        >
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <div class="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                                        <img
-                                            :src="item.image"
-                                            :alt="item.name"
-                                            class="h-full w-full object-cover"
-                                        />
-                                    </div>
-                                    <div class="min-w-0">
-                                        <h3 class="truncate text-sm font-semibold text-slate-900">{{ item.name }}</h3>
-                                        <p class="mt-1 text-xs text-slate-500">{{ formatMoney(item.price) }} each</p>
-                                    </div>
-                                </div>
-                                <button
-                                    @click="removeFromCart(item.id)"
-                                    class="shrink-0 text-xs font-semibold text-rose-600 hover:text-rose-700"
-                                >
-                                    Remove
-                                </button>
-                            </div>
+            <FailedPaymentModal
+                :open="showFailedPaymentModal"
+                @close="closeFailedPaymentModal"
+            />
 
-                            <div class="mt-3 flex items-center justify-between">
-                                <div class="inline-flex items-center rounded-lg border border-slate-300">
-                                    <button
-                                        @click="updateQuantity(item.id, -1)"
-                                        class="px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
-                                    >
-                                        -
-                                    </button>
-                                    <span class="min-w-8 px-2 text-center text-sm font-semibold">{{ item.quantity }}</span>
-                                    <button
-                                        @click="updateQuantity(item.id, 1)"
-                                        class="px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
-                                    >
-                                        +
-                                    </button>
-                                </div>
-
-                                <p class="text-sm font-semibold text-slate-900">
-                                    {{ formatMoney(toNumber(item.price) * item.quantity) }}
-                                </p>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div v-if="cart.length > 0" class="space-y-3 border-t border-slate-200 px-5 py-4">
-                        <div class="space-y-1.5 text-sm">
-                            <div class="flex items-center justify-between text-slate-600">
-                                <span>Subtotal</span>
-                                <span>{{ formatMoney(cartTotal) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-900">
-                                <span>Total</span>
-                                <span>{{ formatMoney(grandTotal) }}</span>
-                            </div>
-                        </div>
-
-                        <button
-                            @click="processCheckout"
-                            class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                        >
-                            Complete checkout
-                        </button>
-                        <button
-                            @click="clearCart"
-                            class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                        >
-                            Clear cart
-                        </button>
-                    </div>
-                </aside>
-            </Transition>
-
-            <Transition
-                enter-active-class="transition-opacity duration-200"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="transition-opacity duration-200"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
-                <div
-                    v-if="showCheckoutDialog"
-                    class="fixed inset-0 z-[65] flex items-center justify-center bg-slate-900/50 p-4"
-                    @click.self="showCheckoutDialog = false"
-                >
-                    <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-                        <h3 class="text-lg font-semibold text-slate-900">Choose payment method</h3>
-                        <p class="mt-1 text-sm text-slate-600">
-                            Total: <span class="font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
-                        </p>
-
-                        <div class="mt-4 space-y-2">
-                            <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
-                                <span class="text-sm font-medium text-slate-800">Cash</span>
-                                <input v-model="selectedPaymentMethod" type="radio" value="cash" class="h-4 w-4" />
-                            </label>
-                            <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
-                                <span class="text-sm font-medium text-slate-800">PayMaya (Card / E-Wallet)</span>
-                                <input v-model="selectedPaymentMethod" type="radio" value="maya_checkout" class="h-4 w-4" />
-                            </label>
-                        </div>
-
-                        <div class="mt-5 grid grid-cols-2 gap-3">
-                            <button
-                                @click="showCheckoutDialog = false"
-                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                :disabled="isProcessingCheckout"
-                                @click="proceedCheckout"
-                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {{
-                                    isProcessingCheckout
-                                        ? "Processing..."
-                                        : selectedPaymentMethod === "cash"
-                                          ? "Next"
-                                          : "Pay now"
-                                }}
-                            </button>
-                        </div>
-                    </section>
-                </div>
-            </Transition>
-
-            <Transition
-                enter-active-class="transition-opacity duration-200"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="transition-opacity duration-200"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
-                <div
-                    v-if="showCashCalculatorModal"
-                    class="fixed inset-0 z-[67] flex items-center justify-center bg-slate-900/50 p-4"
-                    @click.self="closeCashCalculatorModal"
-                >
-                    <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-                        <h3 class="text-lg font-semibold text-slate-900">Cash Payment</h3>
-                        <p class="mt-1 text-sm text-slate-600">
-                            Total due: <span class="font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
-                        </p>
-
-                        <div class="mt-4 space-y-3">
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <p class="text-xs text-slate-500">Cash received</p>
-                                <p class="mt-1 text-2xl font-semibold text-slate-900">
-                                    {{ formatMoney(cashReceivedAmount) }}
-                                </p>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2">
-                                <button
-                                    v-for="amount in [grandTotal, 500, 1000]"
-                                    :key="`quick-${amount}`"
-                                    type="button"
-                                    @click="setQuickCashAmount(amount)"
-                                    class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                                >
-                                    {{ formatMoney(amount) }}
-                                </button>
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-2">
-                                <button
-                                    v-for="key in ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '⌫']"
-                                    :key="`cash-key-${key}`"
-                                    type="button"
-                                    @click="key === '⌫' ? backspaceCashInput() : appendCashInput(key)"
-                                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
-                                >
-                                    {{ key }}
-                                </button>
-                            </div>
-
-                            <div class="rounded-xl border border-slate-200 p-3">
-                                <div class="flex items-center justify-between text-sm">
-                                    <span class="text-slate-600">Change</span>
-                                    <span
-                                        :class="[
-                                            'font-semibold',
-                                            cashChangeAmount < 0 ? 'text-rose-600' : 'text-emerald-600',
-                                        ]"
-                                    >
-                                        {{ formatMoney(cashChangeAmount) }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <p v-if="cashCalculatorError" class="text-xs font-medium text-rose-600">
-                                {{ cashCalculatorError }}
-                            </p>
-                        </div>
-
-                        <div class="mt-5 grid grid-cols-3 gap-3">
-                            <button
-                                @click="clearCashInput"
-                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                            >
-                                Clear
-                            </button>
-                            <button
-                                @click="showCashCalculatorModal = false; showCheckoutDialog = true"
-                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                            >
-                                Back
-                            </button>
-                            <button
-                                :disabled="isProcessingCheckout || !isCashSufficient"
-                                @click="confirmCashCheckout"
-                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {{ isProcessingCheckout ? "Processing..." : "Confirm" }}
-                            </button>
-                        </div>
-                    </section>
-                </div>
-            </Transition>
-
-            <Transition
-                enter-active-class="transition-opacity duration-200"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="transition-opacity duration-200"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
-                <div
-                    v-if="showFailedPaymentModal"
-                    class="fixed inset-0 z-[69] flex items-center justify-center bg-slate-900/60 p-4"
-                    @click.self="closeFailedPaymentModal"
-                >
-                    <section class="w-full max-w-md rounded-2xl border border-rose-200 bg-white shadow-xl">
-                        <div class="border-b border-rose-100 px-5 py-4">
-                            <h3 class="text-lg font-semibold text-rose-700">Payment Failed</h3>
-                            <p class="mt-1 text-sm text-slate-600">
-                                The payment was not completed. Please try again.
-                            </p>
-                        </div>
-
-                        <div class="px-5 py-4">
-                            <button
-                                @click="closeFailedPaymentModal"
-                                class="w-full rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    </section>
-                </div>
-            </Transition>
-
-            <Transition
-                enter-active-class="transition-opacity duration-200"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="transition-opacity duration-200"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
-                <div
-                    v-if="showReceiptModal && receiptData"
-                    class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-4"
-                    @click.self="closeReceiptModal"
-                >
-                    <section class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
-                        <div class="border-b border-slate-200 px-5 py-4">
-                            <h3 class="text-lg font-semibold text-slate-900">Receipt</h3>
-                            <p class="text-xs text-slate-500">{{ receiptData.receipt_number }} | {{ receiptData.date }}</p>
-                        </div>
-
-                        <div class="max-h-[60vh] space-y-3 overflow-y-auto px-5 py-4">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-slate-500">Payment</span>
-                                <span class="font-semibold uppercase text-slate-900">{{ receiptData.payment_method }}</span>
-                            </div>
-                            <div
-                                v-for="item in receiptData.items"
-                                :key="`${item.name}-${item.quantity}`"
-                                class="flex items-center justify-between border-b border-dashed border-slate-200 pb-2 text-sm"
-                            >
-                                <p class="text-slate-700">{{ item.name }} x{{ item.quantity }}</p>
-                                <p class="font-semibold text-slate-900">{{ formatMoney(item.subtotal) }}</p>
-                            </div>
-
-                            <div class="space-y-1.5 rounded-xl bg-slate-50 p-3 text-sm">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-slate-500">Subtotal</span>
-                                    <span class="text-slate-900">{{ formatMoney(receiptData.subtotal) }}</span>
-                                </div>
-                                <div class="flex items-center justify-between border-t border-slate-200 pt-1 font-semibold">
-                                    <span class="text-slate-800">Total</span>
-                                    <span class="text-slate-900">{{ formatMoney(receiptData.total) }}</span>
-                                </div>
-                                <div
-                                    v-if="receiptData.payment_method === 'cash' && receiptData.cash_received !== undefined"
-                                    class="flex items-center justify-between border-t border-slate-200 pt-1"
-                                >
-                                    <span class="text-slate-800">Cash Received</span>
-                                    <span class="text-slate-900">{{ formatMoney(receiptData.cash_received) }}</span>
-                                </div>
-                                <div
-                                    v-if="receiptData.payment_method === 'cash' && receiptData.change !== undefined"
-                                    class="flex items-center justify-between"
-                                >
-                                    <span class="text-slate-800">Change</span>
-                                    <span class="text-slate-900">{{ formatMoney(receiptData.change) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 border-t border-slate-200 px-5 py-4">
-                            <button
-                                @click="closeReceiptModal"
-                                class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                            >
-                                Close
-                            </button>
-                            <button
-                                @click="window.print()"
-                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)]"
-                            >
-                                Print
-                            </button>
-                        </div>
-                    </section>
-                </div>
-            </Transition>
+            <ReceiptModal
+                :open="showReceiptModal"
+                :receipt="receiptData"
+                :formatMoney="formatMoney"
+                @close="closeReceiptModal"
+                @print="window.print()"
+            />
         </div>
     </AuthenticatedLayout>
 </template>
@@ -1208,3 +797,4 @@ onMounted(() => {
     display: none;
 }
 </style>
+
