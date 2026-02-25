@@ -231,6 +231,7 @@ const cartItemCount = computed(() =>
     cart.value.reduce((total, item) => total + item.quantity, 0),
 );
 
+const showCategories = ref(false);
 const grandTotal = computed(() => cartTotal.value);
 const cashReceivedAmount = computed(() => toNumber(cashReceivedInput.value));
 const cashChangeAmount = computed(() => cashReceivedAmount.value - grandTotal.value);
@@ -698,11 +699,25 @@ onMounted(() => {
 
             <main class="relative mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 2xl:px-12">
                 <section class="grid items-start gap-6 lg:grid-cols-[240px,1fr]">
-                    <aside class="flex h-[280px] flex-col rounded-2xl border border-[var(--pos-border)] bg-white p-4 shadow-sm sm:h-[320px] lg:h-[360px]">
-                        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                            Categories
-                        </h3>
-                        <div class="hide-scrollbar flex-1 space-y-2 overflow-y-auto pr-1">
+                    <aside class="flex h-auto flex-col rounded-2xl border border-[var(--pos-border)] bg-white p-3 shadow-sm sm:h-[320px] sm:p-4 lg:h-[360px]">
+                        <div class="mb-2 flex min-h-7 items-center justify-between gap-2 sm:mb-3">
+                            <h3 class="flex items-center text-sm font-semibold uppercase leading-none tracking-wide text-slate-500">
+                                Categories
+                            </h3>
+                            <button
+                                type="button"
+                                @click="showCategories = !showCategories"
+                                class="inline-flex h-7 items-center rounded-md border border-slate-200 px-2 text-[11px] font-semibold leading-none text-slate-600 transition hover:bg-slate-100 sm:hidden"
+                            >
+                                {{ showCategories ? "Hide" : "Show" }}
+                            </button>
+                        </div>
+                        <div
+                            :class="[
+                                showCategories ? 'block' : 'hidden',
+                                'hide-scrollbar flex-1 space-y-2 overflow-y-auto pr-1 sm:block',
+                            ]"
+                        >
                             <button
                                 v-for="category in categories"
                                 :key="category"
