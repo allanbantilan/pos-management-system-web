@@ -31,14 +31,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (config('app.env') === 'production' && request()->header('x-forwarded-proto') === 'https') {
-            URL::forceScheme('https');
-        }
-
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(BackendUser::class, BackendUserPolicy::class);
         Gate::policy(PosItem::class, PosItemPolicy::class);
         Gate::policy(PosCategory::class, PosCategoryPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
-    }
+}
 }
