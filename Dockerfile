@@ -33,6 +33,9 @@ WORKDIR /var/www
 
 COPY . .
 
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
+    && chmod -R 777 storage bootstrap/cache
+
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 RUN npm ci && npm run build
 
