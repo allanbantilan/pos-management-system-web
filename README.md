@@ -7,6 +7,24 @@ Laravel + Inertia + Vue POS application with:
 - Cash checkout and Maya checkout
 - Transactions and receipts management
 
+## Live Website
+
+URL: `pos-management-system-web-production.up.railway.app`
+
+## Seeded Test Accounts
+
+Passwords:
+- Web users: `password`
+- Backend users: `password`
+
+Web (POS):
+- Store Manager: `store-manager@test.com`
+- Cashier: `cashier@test.com`
+- Inventory Clerk: `inventory-clerk@test.com`
+
+Backend (Filament `/admin`, view-only):
+- Backend Analyst: `backend-analyst@test.com`
+
 ## Stack
 
 - PHP 8.2+
@@ -32,6 +50,8 @@ Laravel + Inertia + Vue POS application with:
   - App settings (POS name, logo, predefined color schemes)
   - Transactions and receipts resources
   - POS catalog management
+
+
 
 ## Environment
 
