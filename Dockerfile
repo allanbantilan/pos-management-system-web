@@ -42,4 +42,4 @@ RUN npm ci && npm run build
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["sh", "-c", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=${PORT}"]
+CMD ["sh", "-c", "if [ \"$MIGRATE_ON_START\" = \"true\" ]; then php artisan migrate --force; fi && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=${PORT}"]
