@@ -9,7 +9,7 @@ Laravel + Inertia + Vue POS application with:
 
 ## Live Website
 
-URL: `pos-management-system-web-production.up.railway.app`
+URL: https://pos-management-system-web-production.up.railway.app
 
 ## Seeded Test Accounts
 
@@ -23,6 +23,8 @@ Web (POS):
 Backend (Filament `/admin`, view-only):
 - Backend Analyst: `backend-analyst@test.com`
 
+- For processing payment use this Paymaya Mock Cards
+https://developers.maya.ph/page/full-list-of-mock-cards
 ## Stack
 
 - PHP 8.2+
