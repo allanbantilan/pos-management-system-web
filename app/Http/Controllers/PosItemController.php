@@ -28,7 +28,7 @@ class PosItemController extends Controller
     {
         $search = trim((string) $request->input('search', ''));
         $category = (string) $request->input('category', 'All');
-        $perPage = 6;
+        $perPage = 4;
 
         $categories = PosItem::query()
             ->where('is_active', true)
