@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.4-cli
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -10,6 +10,7 @@ RUN apt-get update \
         libfreetype6-dev \
         libzip-dev \
         libonig-dev \
+        libicu-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
@@ -18,6 +19,7 @@ RUN apt-get update \
         exif \
         pcntl \
         gd \
+        intl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
