@@ -18,9 +18,7 @@ Passwords:
 - Backend users: `password`
 
 Web (POS):
-- Store Manager: `store-manager@test.com`
 - Cashier: `cashier@test.com`
-- Inventory Clerk: `inventory-clerk@test.com`
 
 Backend (Filament `/admin`, view-only):
 - Backend Analyst: `backend-analyst@test.com`
