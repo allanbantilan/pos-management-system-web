@@ -7,15 +7,27 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 class BackendUser extends Authenticatable implements FilamentUser
 {
     use HasFactory;
     use HasRoles;
+    use LogsActivity;
     use Notifiable;
 
     protected string $guard_name = 'backend';
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['name', 'email'])
+            ->logOnlyDirty()
+            ->useLogName('backend-users')
+            ->setDescriptionForEvent(fn (string $eventName) => "Backend user has been {$eventName}");
+    }
 
     /**
      * The attributes that are mass assignable.

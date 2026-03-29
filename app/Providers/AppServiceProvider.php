@@ -9,11 +9,13 @@ use App\Models\User;
 use App\Policies\BackendUserPolicy;
 use App\Policies\PosCategoryPolicy;
 use App\Policies\PosItemPolicy;
+use App\Policies\AuditLogPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,5 +38,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PosItem::class, PosItemPolicy::class);
         Gate::policy(PosCategory::class, PosCategoryPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
-}
+        Gate::policy(Activity::class, AuditLogPolicy::class);
+    }
 }
