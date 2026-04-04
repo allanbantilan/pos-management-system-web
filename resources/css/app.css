@@ -82,3 +82,25 @@
 #app .hover\:to-orange-700:hover {
     --tw-gradient-to: var(--brand-primary-hover) var(--tw-gradient-to-position) !important;
 }
+
+.fi-ta-content-ctn,
+.fi-ta-content {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.fi-ta-content-ctn::-webkit-scrollbar,
+.fi-ta-content::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.fi-main-sidebar .fi-sidebar-nav {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.fi-main-sidebar .fi-sidebar-nav::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}

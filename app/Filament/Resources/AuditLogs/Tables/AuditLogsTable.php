@@ -19,6 +19,7 @@ class AuditLogsTable
                     ->searchable(),
                 TextColumn::make('description')
                     ->label('Description')
+                    ->getStateUsing(fn ($record) => $record->grouped_description ?? $record->description)
                     ->searchable()
                     ->limit(50),
                 TextColumn::make('subject_type')
@@ -35,6 +36,7 @@ class AuditLogsTable
                 TextColumn::make('event')
                     ->label('Action')
                     ->badge()
+                    ->getStateUsing(fn ($record) => $record->grouped_event ?? $record->event)
                     ->color(fn (?string $state): string => match ($state) {
                         'created' => 'success',
                         'updated' => 'warning',

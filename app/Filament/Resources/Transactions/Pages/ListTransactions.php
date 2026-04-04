@@ -10,6 +10,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class ListTransactions extends ListRecords
@@ -28,7 +29,6 @@ class ListTransactions extends ListRecords
                         ->label('Format')
                         ->options([
                             'csv' => 'CSV',
-                            'xlsx' => 'Excel (XLSX)',
                             'pdf' => 'PDF',
                         ])
                         ->required(),
@@ -40,20 +40,35 @@ class ListTransactions extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data) {
+                    abort_unless(Auth::user()?->can('can export data'), 403);
+
                     $from = $data['date_from'];
                     $to = $data['date_to'];
+                    $format = $data['format'];
+                    $fromDate = Carbon::parse($from)->toDateString();
+                    $toDate = Carbon::parse($to)->toDateString();
 
-                    if ($data['format'] === 'pdf') {
-                        return app(PdfReportService::class)->generateTransactionReport($from, $to);
+                    if ($format === 'pdf') {
+                        $response = app(PdfReportService::class)->generateTransactionReport($from, $to);
+                    } else {
+                        $export = new TransactionsExport($from, $to);
+                        $response = $export->download("transactions-{$from}-to-{$to}.csv");
                     }
 
-                    $export = new TransactionsExport($from, $to);
+                    activity()
+                        ->useLog('exports')
+                        ->event('exported')
+                        ->withProperties([
+                            'resource' => 'transactions',
+                            'format' => $format,
+                            'date_from' => $fromDate,
+                            'date_to' => $toDate,
+                            'user_id' => Auth::id(),
+                        ])
+                        ->log('Exported Transactions (' . strtoupper($format) . ')');
 
-                    return $data['format'] === 'csv'
-                        ? $export->download("transactions-{$from}-to-{$to}.csv")
-                        : $export->download("transactions-{$from}-to-{$to}.xlsx");
+                    return $response;
                 }),
         ];
     }
 }
-

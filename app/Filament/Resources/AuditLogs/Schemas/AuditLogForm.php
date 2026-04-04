@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\AuditLogs\Schemas;
 
-use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
 
@@ -11,18 +11,35 @@ class AuditLogForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $resolveChanges = static function ($record, string $key): mixed {
-            $attributeChanges = data_get($record?->attribute_changes, $key);
+        $buildChangeRows = static function ($record): array {
+            $attributeChanges = $record?->attribute_changes ?? [];
+            $properties = $record?->properties ?? [];
 
-            if (!empty($attributeChanges)) {
-                return $attributeChanges;
-            }
+            $old = $attributeChanges['old'] ?? $properties['old'] ?? [];
+            $new = $attributeChanges['attributes'] ?? $properties['attributes'] ?? [];
 
-            return data_get($record?->properties, $key);
-        };
+            $keys = array_values(array_unique(array_merge(array_keys($old), array_keys($new))));
+            sort($keys);
 
-        $hasChanges = static function ($record, string $key) use ($resolveChanges): bool {
-            return !empty($resolveChanges($record, $key));
+            $stringify = static function (mixed $value): string {
+                if ($value === null) {
+                    return '-';
+                }
+
+                if (is_array($value)) {
+                    return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '-';
+                }
+
+                return (string) $value;
+            };
+
+            return array_map(static function (string $key) use ($old, $new, $stringify): array {
+                return [
+                    'field' => $key,
+                    'old' => $stringify($old[$key] ?? null),
+                    'new' => $stringify($new[$key] ?? null),
+                ];
+            }, $keys);
         };
 
         return $schema->components([
@@ -51,14 +68,9 @@ class AuditLogForm
             TextEntry::make('created_at')
                 ->label('Date')
                 ->dateTime('M d, Y h:i A'),
-            KeyValueEntry::make('attribute_changes.old')
-                ->label('Old Values')
-                ->getStateUsing(fn ($record) => $resolveChanges($record, 'old'))
-                ->visible(fn ($record): bool => $hasChanges($record, 'old')),
-            KeyValueEntry::make('attribute_changes.attributes')
-                ->label('New Values')
-                ->getStateUsing(fn ($record) => $resolveChanges($record, 'attributes'))
-                ->visible(fn ($record): bool => $hasChanges($record, 'attributes')),
+            ViewEntry::make('changes')
+                ->view('filament.audit-logs.changes-table', fn ($record): array => ['rows' => $buildChangeRows($record)])
+                ->visible(fn ($record): bool => count($buildChangeRows($record)) > 0),
         ]);
     }
 }

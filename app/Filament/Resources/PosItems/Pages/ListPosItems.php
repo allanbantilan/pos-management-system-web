@@ -28,22 +28,34 @@ class ListPosItems extends ListRecords
                         ->label('Format')
                         ->options([
                             'csv' => 'CSV',
-                            'xlsx' => 'Excel (XLSX)',
                             'pdf' => 'PDF',
                         ])
                         ->required(),
                 ])
                 ->action(function (array $data) {
+                    abort_unless(Auth::user()?->can('can export data'), 403);
+
                     if ($data['format'] === 'pdf') {
-                        return app(PdfReportService::class)->generateInventoryReport();
+                        $response = app(PdfReportService::class)->generateInventoryReport();
+                    } else {
+                        $export = new PosItemsExport();
+                        $date = now()->format('Y-m-d');
+
+                        $response = $export->download("inventory-{$date}.csv");
                     }
+                    activity()
+                        ->useLog('exports')
+                        ->event('exported')
+                        ->withProperties([
+                            'resource' => 'inventory',
+                            'format' => $data['format'],
+                            'date_from' => null,
+                            'date_to' => null,
+                            'user_id' => Auth::id(),
+                        ])
+                        ->log('Exported Inventory (' . strtoupper($data['format']) . ')');
 
-                    $export = new PosItemsExport();
-                    $date = now()->format('Y-m-d');
-
-                    return $data['format'] === 'csv'
-                        ? $export->download("inventory-{$date}.csv")
-                        : $export->download("inventory-{$date}.xlsx");
+                    return $response;
                 }),
             CreateAction::make(),
         ];

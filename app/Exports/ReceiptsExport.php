@@ -51,13 +51,32 @@ class ReceiptsExport implements FromQuery, WithHeadings, WithMapping
     {
         return [
             $receipt->id,
-            $receipt->receipt_number,
-            $receipt->user?->name ?? '-',
-            $receipt->payment_method,
-            $receipt->status,
+            $this->sanitize($receipt->receipt_number),
+            $this->sanitize($receipt->user?->name ?? '-'),
+            $this->sanitize($receipt->payment_method),
+            $this->sanitize($receipt->status),
             $receipt->total,
-            $receipt->provider_reference ?? '-',
+            $this->sanitize($receipt->provider_reference ?? '-'),
             $receipt->issued_at?->format('Y-m-d H:i:s'),
         ];
+    }
+
+    private function sanitize(mixed $value): string
+    {
+        if ($value === null) {
+            return '-';
+        }
+
+        if (is_array($value)) {
+            $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+        }
+
+        $string = (string) $value;
+
+        if (!mb_check_encoding($string, 'UTF-8')) {
+            $string = iconv('UTF-8', 'UTF-8//IGNORE', $string) ?: '';
+        }
+
+        return $string;
     }
 }

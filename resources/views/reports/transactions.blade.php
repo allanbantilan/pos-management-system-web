@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Transaction Report</title>
     <style>
-        body { font-family: sans-serif; font-size: 11px; color: #1f2937; }
+        body { font-family: "DejaVu Sans", sans-serif; font-size: 11px; color: #1f2937; }
         h1 { font-size: 18px; margin-bottom: 2px; }
         .subtitle { color: #6b7280; font-size: 12px; margin-bottom: 16px; }
         .summary { display: flex; margin-bottom: 16px; }

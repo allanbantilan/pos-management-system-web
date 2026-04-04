@@ -2,14 +2,14 @@
 
 namespace App\Exports;
 
-use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Spatie\Activitylog\Models\Activity;
 
-class TransactionsExport implements FromQuery, WithHeadings, WithMapping
+class AuditLogsExport implements FromQuery, WithHeadings, WithMapping
 {
     use Exportable;
 
@@ -20,7 +20,7 @@ class TransactionsExport implements FromQuery, WithHeadings, WithMapping
 
     public function query(): Builder
     {
-        $query = Transaction::query()->with('user');
+        $query = Activity::query()->with(['causer']);
 
         if ($this->dateFrom) {
             $query->whereDate('created_at', '>=', $this->dateFrom);
@@ -36,34 +36,26 @@ class TransactionsExport implements FromQuery, WithHeadings, WithMapping
     public function headings(): array
     {
         return [
-            'ID',
-            'Receipt Number',
-            'Cashier',
-            'Payment Method',
-            'Status',
-            'Subtotal',
-            'Tax',
-            'Discount',
-            'Total',
-            'Paid At',
-            'Created At',
+            'Category',
+            'Description',
+            'Subject',
+            'Subject ID',
+            'Performed By',
+            'Action',
+            'Date',
         ];
     }
 
-    public function map($transaction): array
+    public function map($activity): array
     {
         return [
-            $transaction->id,
-            $this->sanitize($transaction->receipt_number),
-            $this->sanitize($transaction->user?->name ?? '-'),
-            $this->sanitize($transaction->payment_method),
-            $this->sanitize($transaction->status),
-            $transaction->subtotal,
-            $transaction->tax,
-            $transaction->discount,
-            $transaction->total,
-            $transaction->paid_at?->format('Y-m-d H:i:s'),
-            $transaction->created_at->format('Y-m-d H:i:s'),
+            $this->sanitize($activity->log_name),
+            $this->sanitize($activity->description),
+            $this->sanitize(class_basename($activity->subject_type ?? '')),
+            $this->sanitize($activity->subject_id),
+            $this->sanitize($activity->causer?->name ?? 'System'),
+            $this->sanitize($activity->event),
+            $activity->created_at?->format('Y-m-d H:i:s'),
         ];
     }
 
@@ -71,10 +63,6 @@ class TransactionsExport implements FromQuery, WithHeadings, WithMapping
     {
         if ($value === null) {
             return '-';
-        }
-
-        if (is_array($value)) {
-            $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
         }
 
         $string = (string) $value;

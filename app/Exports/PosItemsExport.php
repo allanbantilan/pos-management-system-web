@@ -39,16 +39,35 @@ class PosItemsExport implements FromQuery, WithHeadings, WithMapping
     {
         return [
             $item->id,
-            $item->name,
-            $item->sku,
-            $item->category,
+            $this->sanitize($item->name),
+            $this->sanitize($item->sku),
+            $this->sanitize($item->category),
             $item->price,
             $item->cost,
             $item->stock,
             $item->min_stock,
             $item->is_active ? 'Yes' : 'No',
-            $item->unit,
-            $item->barcode,
+            $this->sanitize($item->unit),
+            $this->sanitize($item->barcode),
         ];
+    }
+
+    private function sanitize(mixed $value): string
+    {
+        if ($value === null) {
+            return '-';
+        }
+
+        if (is_array($value)) {
+            $value = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+        }
+
+        $string = (string) $value;
+
+        if (!mb_check_encoding($string, 'UTF-8')) {
+            $string = iconv('UTF-8', 'UTF-8//IGNORE', $string) ?: '';
+        }
+
+        return $string;
     }
 }
