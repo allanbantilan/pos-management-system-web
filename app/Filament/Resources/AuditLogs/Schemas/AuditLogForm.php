@@ -11,6 +11,20 @@ class AuditLogForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $resolveChanges = static function ($record, string $key): mixed {
+            $attributeChanges = data_get($record?->attribute_changes, $key);
+
+            if (!empty($attributeChanges)) {
+                return $attributeChanges;
+            }
+
+            return data_get($record?->properties, $key);
+        };
+
+        $hasChanges = static function ($record, string $key) use ($resolveChanges): bool {
+            return !empty($resolveChanges($record, $key));
+        };
+
         return $schema->components([
             TextEntry::make('log_name')
                 ->label('Category')
@@ -37,12 +51,14 @@ class AuditLogForm
             TextEntry::make('created_at')
                 ->label('Date')
                 ->dateTime('M d, Y h:i A'),
-            KeyValueEntry::make('properties.old')
+            KeyValueEntry::make('attribute_changes.old')
                 ->label('Old Values')
-                ->visible(fn ($record): bool => !empty($record?->properties['old'] ?? null)),
-            KeyValueEntry::make('properties.attributes')
+                ->getStateUsing(fn ($record) => $resolveChanges($record, 'old'))
+                ->visible(fn ($record): bool => $hasChanges($record, 'old')),
+            KeyValueEntry::make('attribute_changes.attributes')
                 ->label('New Values')
-                ->visible(fn ($record): bool => !empty($record?->properties['attributes'] ?? null)),
+                ->getStateUsing(fn ($record) => $resolveChanges($record, 'attributes'))
+                ->visible(fn ($record): bool => $hasChanges($record, 'attributes')),
         ]);
     }
 }
