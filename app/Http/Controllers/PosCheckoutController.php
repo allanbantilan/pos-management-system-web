@@ -18,8 +18,7 @@ class PosCheckoutController extends Controller
 {
     public function __construct(
         private readonly ReceiptService $receiptService,
-    ) {
-    }
+    ) {}
 
     /**
      * Process a checkout/transaction.
@@ -43,9 +42,9 @@ class PosCheckoutController extends Controller
 
         $transaction = DB::transaction(function () use ($request, &$cashMetadata): Transaction {
             $checkoutData = $this->buildCheckoutData((array) $request->input('items'));
-            $cashReceived = round((float) $request->input('cash_received'), 2);
+            $cashReceived = number_format((float) $request->input('cash_received'), 2, '.', '');
 
-            if ($cashReceived < (float) $checkoutData['total']) {
+            if (bccomp($cashReceived, $checkoutData['total'], 2) < 0) {
                 throw ValidationException::withMessages([
                     'cash_received' => 'Cash received is not enough for this sale.',
                 ]);
@@ -53,7 +52,7 @@ class PosCheckoutController extends Controller
 
             $cashMetadata = [
                 'cash_received' => $cashReceived,
-                'change' => round($cashReceived - (float) $checkoutData['total'], 2),
+                'change' => bcsub($cashReceived, $checkoutData['total'], 2),
             ];
 
             $transaction = $this->createTransaction(
@@ -107,6 +106,11 @@ class PosCheckoutController extends Controller
 
             $this->attachTransactionItems($transaction, $checkoutData['lines']);
 
+            // Reserve stock up-front so the units cannot be sold again between
+            // now and the payment callback. It is restored if the checkout
+            // fails or the customer cancels.
+            $this->deductStockForTransaction($transaction);
+
             return $transaction->fresh(['items.item']);
         });
 
@@ -118,9 +122,11 @@ class PosCheckoutController extends Controller
                 'provider_checkout_id' => $mayaResponse['checkoutId'] ?? null,
             ])->save();
         } catch (Throwable $exception) {
+            $this->restoreStockForTransaction($transaction);
+
             $transaction->forceFill([
                 'status' => 'failed',
-                'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '') . 'Maya checkout creation failed.'),
+                'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Maya checkout creation failed.'),
             ])->save();
 
             throw ValidationException::withMessages([
@@ -178,7 +184,9 @@ class PosCheckoutController extends Controller
             ]);
         }
 
-        $subtotal = 0.0;
+        // Money is computed with bcmath on the exact decimal strings to avoid
+        // floating-point drift. Prices are stored as decimal(10,2).
+        $subtotal = '0.00';
         $lines = [];
 
         foreach ($requestedItems as $requestedItem) {
@@ -191,9 +199,9 @@ class PosCheckoutController extends Controller
                 ]);
             }
 
-            $linePrice = (float) $item->price;
-            $lineSubtotal = round($linePrice * $quantity, 2);
-            $subtotal += $lineSubtotal;
+            $linePrice = number_format((float) $item->price, 2, '.', '');
+            $lineSubtotal = bcmul($linePrice, (string) $quantity, 2);
+            $subtotal = bcadd($subtotal, $lineSubtotal, 2);
 
             $lines[] = [
                 'pos_item_id' => $item->id,
@@ -205,8 +213,8 @@ class PosCheckoutController extends Controller
         }
 
         return [
-            'subtotal' => round($subtotal, 2),
-            'total' => round($subtotal, 2),
+            'subtotal' => $subtotal,
+            'total' => $subtotal,
             'lines' => $lines,
         ];
     }
@@ -232,7 +240,7 @@ class PosCheckoutController extends Controller
             'payment_provider' => $paymentProvider,
             'status' => $status,
             'receipt_number' => $this->generateReceiptNumber(),
-            'provider_reference' => 'RRN-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
+            'provider_reference' => 'RRN-'.now()->format('YmdHis').'-'.Str::upper(Str::random(6)),
             'notes' => $notes,
         ]);
     }
@@ -271,7 +279,7 @@ class PosCheckoutController extends Controller
         foreach ($transaction->items as $line) {
             $item = PosItem::query()->lockForUpdate()->find($line->pos_item_id);
 
-            if (!$item || !$item->is_active || $item->stock < $line->quantity) {
+            if (! $item || ! $item->is_active || $item->stock < $line->quantity) {
                 throw ValidationException::withMessages([
                     'items' => "Insufficient stock for {$line->item?->name}.",
                 ]);
@@ -283,6 +291,30 @@ class PosCheckoutController extends Controller
         $transaction->forceFill([
             'stock_deducted_at' => now(),
         ])->save();
+    }
+
+    /**
+     * Return previously reserved stock to inventory (e.g. when a Maya checkout
+     * cannot be created). Safe to call when nothing was deducted.
+     */
+    private function restoreStockForTransaction(Transaction $transaction): void
+    {
+        if ($transaction->stock_deducted_at === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($transaction): void {
+            $transaction->loadMissing('items');
+
+            foreach ($transaction->items as $line) {
+                PosItem::query()
+                    ->lockForUpdate()
+                    ->find($line->pos_item_id)
+                    ?->increment('stock', (int) $line->quantity);
+            }
+
+            $transaction->forceFill(['stock_deducted_at' => null])->save();
+        });
     }
 
     /**
@@ -346,6 +378,6 @@ class PosCheckoutController extends Controller
 
     private function generateReceiptNumber(): string
     {
-        return 'RCPT-' . now()->format('YmdHis') . '-' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+        return 'RCPT-'.now()->format('YmdHis').'-'.str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
     }
 }

@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -95,8 +95,6 @@ class PosItem extends Model implements HasMedia
 
     /**
      * Check if item is low on stock.
-     *
-     * @return bool
      */
     public function getIsLowStockAttribute(): bool
     {
@@ -105,12 +103,10 @@ class PosItem extends Model implements HasMedia
 
     /**
      * Calculate profit margin percentage.
-     *
-     * @return float|null
      */
     public function getProfitMarginAttribute(): ?float
     {
-        if (!$this->cost || $this->cost == 0) {
+        if (! $this->cost || $this->cost == 0) {
             return null;
         }
 
@@ -120,7 +116,7 @@ class PosItem extends Model implements HasMedia
     /**
      * Scope a query to only include active items.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -131,7 +127,7 @@ class PosItem extends Model implements HasMedia
     /**
      * Scope a query to only include items in stock.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeInStock($query)
@@ -142,8 +138,8 @@ class PosItem extends Model implements HasMedia
     /**
      * Scope a query to filter by category.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $category
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $category
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeByCategory($query, $category)
@@ -154,8 +150,8 @@ class PosItem extends Model implements HasMedia
     /**
      * Scope a query to search items by name or SKU.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $search
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $search
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearch($query, $search)
@@ -169,29 +165,32 @@ class PosItem extends Model implements HasMedia
 
     /**
      * Decrease stock when item is sold.
-     *
-     * @param int $quantity
-     * @return bool
      */
     public function decreaseStock(int $quantity): bool
     {
-        if ($this->stock < $quantity) {
+        // Atomic, race-safe decrement: the row is only updated when it still
+        // has enough stock, preventing overselling under concurrent sales.
+        $affected = static::query()
+            ->whereKey($this->getKey())
+            ->where('stock', '>=', $quantity)
+            ->decrement('stock', $quantity);
+
+        if ($affected === 0) {
             return false;
         }
 
-        $this->stock -= $quantity;
-        return $this->save();
+        $this->refresh();
+
+        return true;
     }
 
     /**
      * Increase stock when item is restocked.
-     *
-     * @param int $quantity
-     * @return bool
      */
     public function increaseStock(int $quantity): bool
     {
         $this->stock += $quantity;
+
         return $this->save();
     }
 

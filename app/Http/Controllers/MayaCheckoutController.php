@@ -18,8 +18,7 @@ class MayaCheckoutController extends Controller
 {
     public function __construct(
         private readonly ReceiptService $receiptService,
-    ) {
-    }
+    ) {}
 
     public function callback(Request $request, Transaction $transaction): RedirectResponse
     {
@@ -33,9 +32,11 @@ class MayaCheckoutController extends Controller
         }
 
         if (in_array($result, ['failed', 'cancelled'], true)) {
+            $this->restoreStockForTransaction($transaction);
+
             $transaction->forceFill([
                 'status' => 'cancelled',
-                'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '') . 'Maya checkout was not completed.'),
+                'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Maya checkout was not completed.'),
             ])->save();
 
             return redirect()->route('pos.dashboard', [
@@ -46,7 +47,6 @@ class MayaCheckoutController extends Controller
         try {
             $service = MayaCheckoutService::fromConfig();
             $paymentData = null;
-            $verifiedViaReferenceLookup = false;
 
             if ($transaction->provider_checkout_id) {
                 $checkoutData = $this->safeMayaLookup(
@@ -69,11 +69,10 @@ class MayaCheckoutController extends Controller
 
                 if ($referenceData !== null) {
                     $paymentData = $referenceData;
-                    $verifiedViaReferenceLookup = true;
                 }
             }
 
-            if (!$this->isMayaPaymentSuccessful($paymentData) && $transaction->provider_checkout_id) {
+            if (! $this->isMayaPaymentSuccessful($paymentData) && $transaction->provider_checkout_id) {
                 $paymentByIdData = $this->safeMayaLookup(
                     fn () => $service->getPaymentById((string) $transaction->provider_checkout_id),
                     $transaction->id,
@@ -85,7 +84,7 @@ class MayaCheckoutController extends Controller
                 }
             }
 
-            if (!$this->isMayaPaymentSuccessful($paymentData) && $transaction->provider_checkout_id) {
+            if (! $this->isMayaPaymentSuccessful($paymentData) && $transaction->provider_checkout_id) {
                 $statusData = $this->safeMayaLookup(
                     fn () => $service->getPaymentStatus((string) $transaction->provider_checkout_id),
                     $transaction->id,
@@ -97,14 +96,19 @@ class MayaCheckoutController extends Controller
                 }
             }
 
-            $isSuccessful = $this->isMayaPaymentSuccessful($paymentData);
-            $belongsToTransaction = $this->isMayaPaymentForTransaction($paymentData, $transaction);
-            $isVerified = $verifiedViaReferenceLookup ? $isSuccessful : ($isSuccessful && $belongsToTransaction);
+            // Always require BOTH a success state AND that the payment's
+            // reference + amount match this transaction. The redirect callback
+            // is unauthenticated, so a successful-looking lookup is never
+            // trusted on its own.
+            $isVerified = $this->isMayaPaymentSuccessful($paymentData)
+                && $this->isMayaPaymentForTransaction($paymentData, $transaction);
 
-            if (!$isVerified) {
+            if (! $isVerified) {
+                $this->restoreStockForTransaction($transaction);
+
                 $transaction->forceFill([
                     'status' => 'failed',
-                    'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '') . 'Maya payment was not verifiably successful.'),
+                    'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Maya payment was not verifiably successful.'),
                 ])->save();
 
                 return redirect()->route('pos.dashboard', [
@@ -129,7 +133,7 @@ class MayaCheckoutController extends Controller
                     'provider_payment_id' => $paymentId,
                     'provider_reference' => $mayaReference ?: $lockedTransaction->provider_reference,
                     'paid_at' => now(),
-                    'notes' => trim(($lockedTransaction->notes ? "{$lockedTransaction->notes}\n" : '') . 'Completed via Maya success callback.'),
+                    'notes' => trim(($lockedTransaction->notes ? "{$lockedTransaction->notes}\n" : '').'Completed via Maya success callback.'),
                 ])->save();
             });
 
@@ -147,9 +151,11 @@ class MayaCheckoutController extends Controller
                 'error' => $exception->getMessage(),
             ]);
 
+            $this->restoreStockForTransaction($transaction);
+
             $transaction->forceFill([
                 'status' => 'failed',
-                'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '') . 'Payment verification failed.'),
+                'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Payment verification failed.'),
             ])->save();
 
             return redirect()->route('pos.dashboard', [
@@ -169,7 +175,7 @@ class MayaCheckoutController extends Controller
         foreach ($transaction->items as $line) {
             $item = PosItem::query()->lockForUpdate()->find($line->pos_item_id);
 
-            if (!$item || !$item->is_active || $item->stock < $line->quantity) {
+            if (! $item || ! $item->is_active || $item->stock < $line->quantity) {
                 throw ValidationException::withMessages([
                     'items' => "Insufficient stock for {$line->item?->name}.",
                 ]);
@@ -184,11 +190,36 @@ class MayaCheckoutController extends Controller
     }
 
     /**
+     * Return reserved stock to inventory when a Maya payment does not complete
+     * (cancelled, unverified, or errored). Safe to call when nothing was
+     * deducted — it is a no-op in that case.
+     */
+    private function restoreStockForTransaction(Transaction $transaction): void
+    {
+        if ($transaction->stock_deducted_at === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($transaction): void {
+            $transaction->loadMissing('items');
+
+            foreach ($transaction->items as $line) {
+                PosItem::query()
+                    ->lockForUpdate()
+                    ->find($line->pos_item_id)
+                    ?->increment('stock', (int) $line->quantity);
+            }
+
+            $transaction->forceFill(['stock_deducted_at' => null])->save();
+        });
+    }
+
+    /**
      * @param  array<string, mixed>|null  $paymentData
      */
     private function isMayaPaymentSuccessful(?array $paymentData): bool
     {
-        if (!$paymentData) {
+        if (! $paymentData) {
             return false;
         }
 
@@ -217,7 +248,7 @@ class MayaCheckoutController extends Controller
         ];
 
         foreach ($candidates as $candidate) {
-            if (!is_string($candidate) || trim($candidate) === '') {
+            if (! is_string($candidate) || trim($candidate) === '') {
                 continue;
             }
 
@@ -234,7 +265,7 @@ class MayaCheckoutController extends Controller
      */
     private function extractMayaPaymentId(?array $paymentData): ?string
     {
-        if (!$paymentData) {
+        if (! $paymentData) {
             return null;
         }
 
@@ -256,7 +287,7 @@ class MayaCheckoutController extends Controller
      */
     private function extractMayaReference(?array $paymentData): ?string
     {
-        if (!$paymentData) {
+        if (! $paymentData) {
             return null;
         }
 
@@ -279,7 +310,7 @@ class MayaCheckoutController extends Controller
      */
     private function isMayaPaymentForTransaction(?array $paymentData, Transaction $transaction): bool
     {
-        if (!$paymentData) {
+        if (! $paymentData) {
             return false;
         }
 
@@ -294,7 +325,7 @@ class MayaCheckoutController extends Controller
             ?? $paymentData['results'][0]['totalAmount']
             ?? null;
 
-        if (!is_array($amount) || !array_key_exists('value', $amount)) {
+        if (! is_array($amount) || ! array_key_exists('value', $amount)) {
             return true;
         }
 

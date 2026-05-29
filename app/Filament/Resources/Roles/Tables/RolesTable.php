@@ -45,7 +45,10 @@ class RolesTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    // Re-check the delete policy per record so protected system
+                    // roles cannot be removed via a bulk action.
+                    DeleteBulkAction::make()
+                        ->authorizeIndividualRecords('delete'),
                 ]),
             ]);
     }

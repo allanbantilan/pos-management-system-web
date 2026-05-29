@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MayaCheckoutController;
 use App\Http\Controllers\PosCheckoutController;
 use App\Http\Controllers\PosItemController;
+use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::get('/', function () {
@@ -19,7 +19,7 @@ Route::get('/pos/checkout/callback/{transaction}/{result}', [MayaCheckoutControl
 Route::middleware('guest')->group(function () {
     // Login
     Route::get('login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
 
     // Register
     Route::get('register', [AuthController::class, 'showRegister'])->name('register');
@@ -41,7 +41,11 @@ Route::middleware('auth')->group(function () {
     Route::prefix('pos')->name('pos.')->group(function () {
         Route::get('/items', [PosItemController::class, 'getItems'])->name('items.index');
         Route::get('/items/{id}', [PosItemController::class, 'getItem'])->name('items.show');
-        Route::post('/checkout', [PosCheckoutController::class, 'checkout'])->name('checkout');
+        // Only users with the "can process sale" permission may complete a sale.
+        // This blocks role-less self-registered accounts from creating transactions.
+        Route::post('/checkout', [PosCheckoutController::class, 'checkout'])
+            ->middleware('can:can process sale')
+            ->name('checkout');
     });
 });
 

@@ -26,8 +26,18 @@ class RolePolicy
         return $this->can($authUser, 'can update role');
     }
 
+    /**
+     * System roles that must never be deleted, to avoid locking every
+     * administrator out of the application.
+     */
+    private const PROTECTED_ROLES = ['backend-admin', 'client-admin'];
+
     public function delete(mixed $authUser, Role $role): bool
     {
+        if (in_array($role->name, self::PROTECTED_ROLES, true)) {
+            return false;
+        }
+
         return $this->can($authUser, 'can delete role');
     }
 
@@ -68,7 +78,7 @@ class RolePolicy
 
     private function can(mixed $authUser, string $permission): bool
     {
-        if (!is_object($authUser) || !method_exists($authUser, 'can')) {
+        if (! is_object($authUser) || ! method_exists($authUser, 'can')) {
             return false;
         }
 
