@@ -4,8 +4,10 @@ namespace App\Filament\Resources\Roles\Pages;
 
 use App\Filament\Resources\Roles\RoleResource;
 use App\Filament\Resources\Roles\Schemas\RoleForm;
+use App\Models\BackendUser;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -80,9 +82,19 @@ class EditRole extends EditRecord
             ->values()
             ->all();
 
-        return Permission::query()
+        $query = Permission::query()
             ->whereIn('id', $ids)
-            ->where('guard_name', $data['guard_name'] ?? 'web')
+            ->where('guard_name', $data['guard_name'] ?? 'web');
+
+        // Privilege-escalation guard: a non super-admin may only grant
+        // permissions they already hold themselves.
+        $actor = Auth::guard('backend')->user();
+        if (! $actor instanceof BackendUser || ! $actor->hasRole('backend-admin')) {
+            $allowedNames = $actor?->getAllPermissions()->pluck('name')->all() ?? [];
+            $query->whereIn('name', $allowedNames);
+        }
+
+        return $query
             ->pluck('id')
             ->map(static fn ($id): string => (string) $id)
             ->all();
