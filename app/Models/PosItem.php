@@ -156,10 +156,12 @@ class PosItem extends Model implements HasMedia
      */
     public function scopeSearch($query, $search)
     {
-        return $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-                ->orWhere('sku', 'like', "%{$search}%")
-                ->orWhere('barcode', 'like', "%{$search}%");
+        $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $search);
+
+        return $query->where(function ($q) use ($escaped) {
+            $q->where('name', 'like', "%{$escaped}%")
+                ->orWhere('sku', 'like', "%{$escaped}%")
+                ->orWhere('barcode', 'like', "%{$escaped}%");
         });
     }
 
@@ -189,9 +191,17 @@ class PosItem extends Model implements HasMedia
      */
     public function increaseStock(int $quantity): bool
     {
-        $this->stock += $quantity;
+        $affected = static::query()
+            ->whereKey($this->getKey())
+            ->increment('stock', $quantity);
 
-        return $this->save();
+        if ($affected === 0) {
+            return false;
+        }
+
+        $this->refresh();
+
+        return true;
     }
 
     /**

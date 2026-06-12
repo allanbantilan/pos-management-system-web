@@ -4,9 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Receipt extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'transaction_id',
         'user_id',
@@ -26,6 +30,15 @@ class Receipt extends Model
         'issued_at' => 'datetime',
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['receipt_number', 'payment_method', 'status', 'total'])
+            ->logOnlyDirty()
+            ->useLogName('receipts')
+            ->setDescriptionForEvent(fn (string $eventName) => "Receipt has been {$eventName}");
+    }
+
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
@@ -36,4 +49,3 @@ class Receipt extends Model
         return $this->belongsTo(User::class);
     }
 }
-

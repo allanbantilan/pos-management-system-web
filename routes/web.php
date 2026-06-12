@@ -44,12 +44,7 @@ Route::middleware('auth')->group(function () {
         // Only users with the "can process sale" permission may complete a sale.
         // This blocks role-less self-registered accounts from creating transactions.
         Route::post('/checkout', [PosCheckoutController::class, 'checkout'])
-            ->middleware('can:can process sale')
+            ->middleware(['can:can process sale', 'throttle:30,1'])
             ->name('checkout');
     });
-});
-
-// API routes for AJAX calls
-Route::middleware(['auth'])->prefix('api')->group(function () {
-    // Additional API endpoints can be added here
 });

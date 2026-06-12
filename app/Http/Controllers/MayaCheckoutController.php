@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PosItem;
 use App\Models\Transaction;
 use App\Services\MayaCheckoutService;
 use App\Services\ReceiptService;
+use App\Services\StockService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class MayaCheckoutController extends Controller
 {
     public function __construct(
         private readonly ReceiptService $receiptService,
+        private readonly StockService $stockService,
     ) {}
 
     public function callback(Request $request, Transaction $transaction): RedirectResponse
@@ -32,12 +32,12 @@ class MayaCheckoutController extends Controller
         }
 
         if (in_array($result, ['failed', 'cancelled'], true)) {
-            $this->restoreStockForTransaction($transaction);
+            $this->stockService->restore($transaction);
 
-            $transaction->forceFill([
+            $transaction->update([
                 'status' => 'cancelled',
                 'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Maya checkout was not completed.'),
-            ])->save();
+            ]);
 
             return redirect()->route('pos.dashboard', [
                 'checkout_result' => 'failed',
@@ -96,20 +96,16 @@ class MayaCheckoutController extends Controller
                 }
             }
 
-            // Always require BOTH a success state AND that the payment's
-            // reference + amount match this transaction. The redirect callback
-            // is unauthenticated, so a successful-looking lookup is never
-            // trusted on its own.
             $isVerified = $this->isMayaPaymentSuccessful($paymentData)
                 && $this->isMayaPaymentForTransaction($paymentData, $transaction);
 
             if (! $isVerified) {
-                $this->restoreStockForTransaction($transaction);
+                $this->stockService->restore($transaction);
 
-                $transaction->forceFill([
+                $transaction->update([
                     'status' => 'failed',
                     'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Maya payment was not verifiably successful.'),
-                ])->save();
+                ]);
 
                 return redirect()->route('pos.dashboard', [
                     'checkout_result' => 'failed',
@@ -126,15 +122,15 @@ class MayaCheckoutController extends Controller
                     ->with(['items.item'])
                     ->firstOrFail();
 
-                $this->deductStockForTransaction($lockedTransaction);
+                $this->stockService->deduct($lockedTransaction);
 
-                $lockedTransaction->forceFill([
+                $lockedTransaction->update([
                     'status' => 'completed',
                     'provider_payment_id' => $paymentId,
                     'provider_reference' => $mayaReference ?: $lockedTransaction->provider_reference,
                     'paid_at' => now(),
                     'notes' => trim(($lockedTransaction->notes ? "{$lockedTransaction->notes}\n" : '').'Completed via Maya success callback.'),
-                ])->save();
+                ]);
             });
 
             $this->receiptService->persistSnapshot(
@@ -151,67 +147,17 @@ class MayaCheckoutController extends Controller
                 'error' => $exception->getMessage(),
             ]);
 
-            $this->restoreStockForTransaction($transaction);
+            $this->stockService->restore($transaction);
 
-            $transaction->forceFill([
+            $transaction->update([
                 'status' => 'failed',
                 'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Payment verification failed.'),
-            ])->save();
+            ]);
 
             return redirect()->route('pos.dashboard', [
                 'checkout_result' => 'failed',
             ]);
         }
-    }
-
-    private function deductStockForTransaction(Transaction $transaction): void
-    {
-        if ($transaction->stock_deducted_at !== null) {
-            return;
-        }
-
-        $transaction->loadMissing(['items.item']);
-
-        foreach ($transaction->items as $line) {
-            $item = PosItem::query()->lockForUpdate()->find($line->pos_item_id);
-
-            if (! $item || ! $item->is_active || $item->stock < $line->quantity) {
-                throw ValidationException::withMessages([
-                    'items' => "Insufficient stock for {$line->item?->name}.",
-                ]);
-            }
-
-            $item->decrement('stock', (int) $line->quantity);
-        }
-
-        $transaction->forceFill([
-            'stock_deducted_at' => now(),
-        ])->save();
-    }
-
-    /**
-     * Return reserved stock to inventory when a Maya payment does not complete
-     * (cancelled, unverified, or errored). Safe to call when nothing was
-     * deducted — it is a no-op in that case.
-     */
-    private function restoreStockForTransaction(Transaction $transaction): void
-    {
-        if ($transaction->stock_deducted_at === null) {
-            return;
-        }
-
-        DB::transaction(function () use ($transaction): void {
-            $transaction->loadMissing('items');
-
-            foreach ($transaction->items as $line) {
-                PosItem::query()
-                    ->lockForUpdate()
-                    ->find($line->pos_item_id)
-                    ?->increment('stock', (int) $line->quantity);
-            }
-
-            $transaction->forceFill(['stock_deducted_at' => null])->save();
-        });
     }
 
     /**

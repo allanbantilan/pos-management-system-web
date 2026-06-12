@@ -7,6 +7,7 @@ use App\Models\PosItem;
 use App\Models\Transaction;
 use App\Services\MayaCheckoutService;
 use App\Services\ReceiptService;
+use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ class PosCheckoutController extends Controller
 {
     public function __construct(
         private readonly ReceiptService $receiptService,
+        private readonly StockService $stockService,
     ) {}
 
     /**
@@ -65,11 +67,9 @@ class PosCheckoutController extends Controller
             );
 
             $this->attachTransactionItems($transaction, $checkoutData['lines']);
-            $this->deductStockForTransaction($transaction);
+            $this->stockService->deduct($transaction);
 
-            $transaction->forceFill([
-                'paid_at' => now(),
-            ])->save();
+            $transaction->update(['paid_at' => now()]);
 
             return $transaction->fresh(['items.item']);
         });
@@ -106,10 +106,7 @@ class PosCheckoutController extends Controller
 
             $this->attachTransactionItems($transaction, $checkoutData['lines']);
 
-            // Reserve stock up-front so the units cannot be sold again between
-            // now and the payment callback. It is restored if the checkout
-            // fails or the customer cancels.
-            $this->deductStockForTransaction($transaction);
+            $this->stockService->deduct($transaction);
 
             return $transaction->fresh(['items.item']);
         });
@@ -118,16 +115,16 @@ class PosCheckoutController extends Controller
             $payload = $this->buildMayaCheckoutPayload($request, $transaction);
             $mayaResponse = $service->createCheckout($payload);
 
-            $transaction->forceFill([
+            $transaction->update([
                 'provider_checkout_id' => $mayaResponse['checkoutId'] ?? null,
-            ])->save();
+            ]);
         } catch (Throwable $exception) {
-            $this->restoreStockForTransaction($transaction);
+            $this->stockService->restore($transaction);
 
-            $transaction->forceFill([
+            $transaction->update([
                 'status' => 'failed',
                 'notes' => trim(($transaction->notes ? "{$transaction->notes}\n" : '').'Maya checkout creation failed.'),
-            ])->save();
+            ]);
 
             throw ValidationException::withMessages([
                 'payment_method' => 'Unable to initialize Maya checkout.',
@@ -184,8 +181,6 @@ class PosCheckoutController extends Controller
             ]);
         }
 
-        // Money is computed with bcmath on the exact decimal strings to avoid
-        // floating-point drift. Prices are stored as decimal(10,2).
         $subtotal = '0.00';
         $lines = [];
 
@@ -266,55 +261,6 @@ class PosCheckoutController extends Controller
         }
 
         DB::table('transaction_items')->insert($payload);
-    }
-
-    private function deductStockForTransaction(Transaction $transaction): void
-    {
-        if ($transaction->stock_deducted_at !== null) {
-            return;
-        }
-
-        $transaction->loadMissing(['items.item']);
-
-        foreach ($transaction->items as $line) {
-            $item = PosItem::query()->lockForUpdate()->find($line->pos_item_id);
-
-            if (! $item || ! $item->is_active || $item->stock < $line->quantity) {
-                throw ValidationException::withMessages([
-                    'items' => "Insufficient stock for {$line->item?->name}.",
-                ]);
-            }
-
-            $item->decrement('stock', (int) $line->quantity);
-        }
-
-        $transaction->forceFill([
-            'stock_deducted_at' => now(),
-        ])->save();
-    }
-
-    /**
-     * Return previously reserved stock to inventory (e.g. when a Maya checkout
-     * cannot be created). Safe to call when nothing was deducted.
-     */
-    private function restoreStockForTransaction(Transaction $transaction): void
-    {
-        if ($transaction->stock_deducted_at === null) {
-            return;
-        }
-
-        DB::transaction(function () use ($transaction): void {
-            $transaction->loadMissing('items');
-
-            foreach ($transaction->items as $line) {
-                PosItem::query()
-                    ->lockForUpdate()
-                    ->find($line->pos_item_id)
-                    ?->increment('stock', (int) $line->quantity);
-            }
-
-            $transaction->forceFill(['stock_deducted_at' => null])->save();
-        });
     }
 
     /**

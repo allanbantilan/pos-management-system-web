@@ -59,6 +59,11 @@ class HandleInertiaRequests extends Middleware
             'border_color' => (string) $defaultPalette['border_color'],
         ];
 
+        static $tableChecked = false;
+        if (! $tableChecked) {
+            $tableChecked = true;
+        }
+
         if (Schema::hasTable('app_settings')) {
             $settings = AppSetting::current();
             $branding = $settings->resolvedTheme();
@@ -102,7 +107,6 @@ class HandleInertiaRequests extends Middleware
         }
 
         return array_merge(parent::share($request), [
-            // Share app name from config
             'appName' => config('app.name', 'Pos System'),
             'branding' => $branding,
             'profileReceipts' => $profileReceipts,

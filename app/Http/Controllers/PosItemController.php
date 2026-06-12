@@ -57,10 +57,11 @@ class PosItemController extends Controller
         }
 
         if ($search !== '') {
-            $itemsQuery->where(function ($builder) use ($search) {
-                $builder->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('sku', 'like', '%' . $search . '%')
-                    ->orWhere('barcode', 'like', '%' . $search . '%');
+            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $search);
+            $itemsQuery->where(function ($builder) use ($escaped) {
+                $builder->where('name', 'like', '%' . $escaped . '%')
+                    ->orWhere('sku', 'like', '%' . $escaped . '%')
+                    ->orWhere('barcode', 'like', '%' . $escaped . '%');
             });
         }
 
@@ -160,10 +161,11 @@ class PosItemController extends Controller
         }
 
         if (!empty($search)) {
-            $query->where(function ($builder) use ($search) {
-                $builder->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('sku', 'like', '%' . $search . '%')
-                    ->orWhere('barcode', 'like', '%' . $search . '%');
+            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $search);
+            $query->where(function ($builder) use ($escaped) {
+                $builder->where('name', 'like', '%' . $escaped . '%')
+                    ->orWhere('sku', 'like', '%' . $escaped . '%')
+                    ->orWhere('barcode', 'like', '%' . $escaped . '%');
             });
         }
 
