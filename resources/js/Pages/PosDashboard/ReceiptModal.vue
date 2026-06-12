@@ -31,7 +31,7 @@ const emit = defineEmits(["close", "print"]);
             class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-4"
             @click.self="emit('close')"
         >
-            <section class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
+            <section role="dialog" aria-label="Receipt" aria-modal="true" class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
                 <div class="border-b border-slate-200 px-5 py-4">
                     <h3 class="text-lg font-semibold text-slate-900">Receipt</h3>
                     <p class="text-xs text-slate-500">{{ receipt.receipt_number }} | {{ receipt.date }}</p>

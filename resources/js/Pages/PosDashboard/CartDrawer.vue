@@ -55,6 +55,9 @@ const emit = defineEmits(["close", "remove", "updateQty", "checkout", "clear"]);
     >
         <aside
             v-if="open"
+            role="dialog"
+            aria-label="Shopping cart"
+            aria-modal="true"
             class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white"
         >
             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -105,6 +108,7 @@ const emit = defineEmits(["close", "remove", "updateQty", "checkout", "clear"]);
                         <div class="inline-flex items-center rounded-lg border border-slate-300">
                             <button
                                 class="px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
+                                aria-label="Decrease quantity"
                                 @click="emit('updateQty', item.id, -1)"
                             >
                                 -
@@ -112,6 +116,7 @@ const emit = defineEmits(["close", "remove", "updateQty", "checkout", "clear"]);
                             <span class="min-w-8 px-2 text-center text-sm font-semibold">{{ item.quantity }}</span>
                             <button
                                 class="px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100"
+                                aria-label="Increase quantity"
                                 @click="emit('updateQty', item.id, 1)"
                             >
                                 +

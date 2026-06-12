@@ -10,8 +10,11 @@ import CheckoutDialog from "./PosDashboard/CheckoutDialog.vue";
 import CashCalculatorModal from "./PosDashboard/CashCalculatorModal.vue";
 import FailedPaymentModal from "./PosDashboard/FailedPaymentModal.vue";
 import ReceiptModal from "./PosDashboard/ReceiptModal.vue";
+import axios from "axios";
 import { hexToRgba, isHexColor } from "@/utils/color";
 import { formatMoney, toNumber } from "@/utils/format";
+
+const CART_STORAGE_KEY = "pos_cart";
 
 const props = defineProps({
     auth: Object,
@@ -51,7 +54,8 @@ const props = defineProps({
 
 const selectedCategory = ref(props.filters?.category || "All");
 const searchQuery = ref(props.filters?.search || "");
-const cart = ref([]);
+const cart = ref(JSON.parse(sessionStorage.getItem(CART_STORAGE_KEY) || "[]"));
+const isLoadingItems = ref(false);
 const showCart = ref(false);
 const showCheckoutDialog = ref(false);
 const showCashCalculatorModal = ref(false);
@@ -156,6 +160,7 @@ const currentPage = computed(() => props.items?.current_page ?? 1);
 const totalPages = computed(() => props.items?.last_page ?? 1);
 
 const fetchItems = (page = 1, replace = false) => {
+    isLoadingItems.value = true;
     router.get(
         route("pos.dashboard"),
         {
@@ -170,6 +175,12 @@ const fetchItems = (page = 1, replace = false) => {
             preserveState: true,
             preserveScroll: true,
             replace,
+            onFinish: () => {
+                isLoadingItems.value = false;
+            },
+            onError: () => {
+                showToastMessage("Failed to load items. Please try again.", "danger");
+            },
         },
     );
 };
@@ -236,8 +247,12 @@ const showToastMessage = (message, tone = "success") => {
 
     toastTimer = setTimeout(() => {
         showToast.value = false;
-    }, 1400);
+    }, 3000);
 };
+
+watch(cart, (newCart) => {
+    sessionStorage.setItem(CART_STORAGE_KEY, JSON.stringify(newCart));
+}, { deep: true });
 
 const addToCart = (itemToAdd) => {
     const existingItem = cart.value.find((item) => item.id === itemToAdd.id);
@@ -285,6 +300,7 @@ const updateQuantity = (itemId, change) => {
 
 const clearCart = () => {
     cart.value = [];
+    sessionStorage.removeItem(CART_STORAGE_KEY);
 };
 
 const resetCheckoutUri = () => {
@@ -392,7 +408,7 @@ const completeCheckout = async (cashMeta = null) => {
     isProcessingCheckout.value = true;
 
     try {
-        const response = await window.axios.post(route("pos.checkout"), {
+        const response = await axios.post(route("pos.checkout"), {
             payment_method: selectedPaymentMethod.value,
             items: cart.value.map((item) => ({
                 id: item.id,
@@ -613,8 +629,20 @@ onMounted(() => {
                                 v-model="searchQuery"
                                 type="text"
                                 placeholder="Search menu"
-                                class="block w-full rounded-xl border border-[var(--pos-border)] bg-white py-2.5 pl-20 pr-4 text-sm outline-none transition focus:border-[var(--pos-primary)] focus:ring-2 focus:ring-[var(--pos-surface)]"
+                                aria-label="Search menu items"
+                                class="block w-full rounded-xl border border-[var(--pos-border)] bg-white py-2.5 pl-20 pr-10 text-sm outline-none transition focus:border-[var(--pos-primary)] focus:ring-2 focus:ring-[var(--pos-surface)]"
                             />
+                            <button
+                                v-if="searchQuery"
+                                @click="searchQuery = ''"
+                                type="button"
+                                class="absolute inset-y-0 right-0 inline-flex items-center pr-3 text-slate-400 hover:text-slate-600"
+                                aria-label="Clear search"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -636,24 +664,29 @@ onMounted(() => {
                                 {{ selectedCategory === "All" ? "Menu" : selectedCategory }}
                             </h2>
                         </div>
-                        <div v-if="paginatedItems.length > 0" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                            <article
-                                v-for="item in paginatedItems"
-                                :key="item.id"
-                                class="group overflow-hidden rounded-3xl border border-[var(--pos-border)] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                            >
-                                <div class="relative h-64 overflow-hidden bg-[var(--pos-surface)]">
-                                    <img
-                                        :src="item.image"
-                                        :alt="item.name"
-                                        class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                                    />
-                                    <span
-                                        class="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-slate-700"
-                                    >
-                                        {{ item.category }}
-                                    </span>
-                                </div>
+                        <div class="relative">
+                            <div v-if="isLoadingItems" class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 backdrop-blur-sm">
+                                <span class="text-sm font-semibold text-slate-500">Loading items...</span>
+                            </div>
+                            <div v-if="paginatedItems.length > 0" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                                <article
+                                    v-for="item in paginatedItems"
+                                    :key="item.id"
+                                    class="group overflow-hidden rounded-3xl border border-[var(--pos-border)] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                                >
+                                    <div class="relative h-64 overflow-hidden bg-[var(--pos-surface)]">
+                                        <img
+                                            :src="item.image"
+                                            :alt="item.name"
+                                            class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                                            @error="$event.target.src = '/images/placeholder-item.svg'"
+                                        />
+                                        <span
+                                            class="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-slate-700"
+                                        >
+                                            {{ item.category }}
+                                        </span>
+                                    </div>
 
                                 <div class="space-y-3 p-4">
                                     <div>
@@ -675,7 +708,8 @@ onMounted(() => {
                                     </div>
                                 </div>
                             </article>
-                        </div>
+                            </div>
+                            </div>
 
                         <div v-if="paginatedItems.length > 0 && totalPages > 1" class="mt-6 flex items-center justify-center gap-3">
                             <button
@@ -697,8 +731,12 @@ onMounted(() => {
                             </button>
                         </div>
 
-                        <div v-if="paginatedItems.length === 0" class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-                            <h3 class="text-lg font-semibold text-slate-700">No matching items</h3>
+                        <div v-if="paginatedItems.length === 0 && !isLoadingItems" class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                            </svg>
+                            <h3 class="mt-3 text-lg font-semibold text-slate-700">No matching items</h3>
+                            <p class="mt-1 text-sm text-slate-500">Try adjusting your search or category filter.</p>
                         </div>
                     </section>
                 </section>

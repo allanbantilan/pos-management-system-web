@@ -59,7 +59,7 @@ const emit = defineEmits([
             class="fixed inset-0 z-[67] flex items-center justify-center bg-slate-900/50 p-4"
             @click.self="emit('close')"
         >
-            <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
+            <section role="dialog" aria-label="Cash payment" aria-modal="true" class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
                 <h3 class="text-lg font-semibold text-slate-900">Cash Payment</h3>
                 <p class="mt-1 text-sm text-slate-600">
                     Total due: <span class="font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
