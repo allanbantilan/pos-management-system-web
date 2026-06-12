@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class PosCategoryResource extends Resource
@@ -50,5 +51,10 @@ class PosCategoryResource extends Resource
             'create' => CreatePosCategory::route('/create'),
             'edit' => EditPosCategory::route('/{record}/edit'),
         ];
+    }
+
+    public static function canAccess(): bool
+    {
+        return (bool) Auth::user()?->can('can view pos category');
     }
 }

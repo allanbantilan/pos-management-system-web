@@ -15,11 +15,14 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class PosItemResource extends Resource
 {
     protected static ?string $model = PosItem::class;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
     protected static ?string $navigationLabel = 'Items';
@@ -60,5 +63,24 @@ class PosItemResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = PosItem::where('is_active', true)
+            ->whereColumn('stock', '<=', 'min_stock')
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
+    public static function canAccess(): bool
+    {
+        return (bool) Auth::user()?->can('can view pos item');
     }
 }

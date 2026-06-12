@@ -35,7 +35,8 @@ class UserForm
                         modifyQueryUsing: fn (Builder $query): Builder => $query->where('guard_name', 'web')
                     )
                     ->multiple()
-                    ->preload(),
+                    ->preload()
+                    ->required(),
             ]);
     }
 }

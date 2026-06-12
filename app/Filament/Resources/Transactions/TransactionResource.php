@@ -18,6 +18,8 @@ class TransactionResource extends Resource
 {
     protected static ?string $model = Transaction::class;
 
+    protected static ?string $recordTitleAttribute = 'receipt_number';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
     protected static ?string $navigationLabel = 'Sales';
     protected static ?string $modelLabel = 'Sale';
@@ -50,5 +52,15 @@ class TransactionResource extends Resource
     public static function canViewAny(): bool
     {
         return (bool) Auth::user()?->can('can view dashboard analytics');
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) Transaction::where('status', 'pending')->count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
     }
 }

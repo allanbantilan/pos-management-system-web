@@ -58,6 +58,8 @@ class AuditLogsTable
                         'app-settings' => 'App Settings',
                         'users' => 'Users',
                         'backend-users' => 'Backend Users',
+                        'receipts' => 'Receipts',
+                        'exports' => 'Exports',
                     ]),
                 SelectFilter::make('event')
                     ->options([

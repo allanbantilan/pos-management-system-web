@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class BackendUserResource extends Resource
@@ -50,5 +51,10 @@ class BackendUserResource extends Resource
             'create' => CreateBackendUser::route('/create'),
             'edit' => EditBackendUser::route('/{record}/edit'),
         ];
+    }
+
+    public static function canAccess(): bool
+    {
+        return (bool) Auth::user()?->can('can view backend user');
     }
 }
