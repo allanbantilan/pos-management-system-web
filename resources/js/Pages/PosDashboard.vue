@@ -8,9 +8,10 @@ import CategoriesSidebar from "./PosDashboard/CategoriesSidebar.vue";
 import CartDrawer from "./PosDashboard/CartDrawer.vue";
 import CheckoutDialog from "./PosDashboard/CheckoutDialog.vue";
 import CashCalculatorModal from "./PosDashboard/CashCalculatorModal.vue";
-import MayaQrModal from "./PosDashboard/MayaQrModal.vue";
 import FailedPaymentModal from "./PosDashboard/FailedPaymentModal.vue";
 import ReceiptModal from "./PosDashboard/ReceiptModal.vue";
+import { hexToRgba, isHexColor } from "@/utils/color";
+import { formatMoney, toNumber } from "@/utils/format";
 
 const props = defineProps({
     auth: Object,
@@ -67,30 +68,6 @@ const cashCalculatorError = ref("");
 let searchDebounceTimer = null;
 let toastTimer = null;
 const page = usePage();
-const toNumber = (value) => {
-    const parsed = Number(value);
-
-    return Number.isFinite(parsed) ? parsed : 0;
-};
-const pesoFormatter = new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 2,
-});
-const formatMoney = (value) => pesoFormatter.format(toNumber(value));
-const isHexColor = (value) => /^#[0-9A-F]{6}$/i.test(String(value ?? ""));
-const hexToRgba = (hex, alpha = 1) => {
-    if (!isHexColor(hex)) {
-        return `rgba(234, 88, 12, ${alpha})`;
-    }
-
-    const normalized = hex.replace("#", "");
-    const r = Number.parseInt(normalized.slice(0, 2), 16);
-    const g = Number.parseInt(normalized.slice(2, 4), 16);
-    const b = Number.parseInt(normalized.slice(4, 6), 16);
-
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
 const fallbackTheme = {
     pos_name: "Fast Food Kiosk",
     primary_color: "#ea580c",

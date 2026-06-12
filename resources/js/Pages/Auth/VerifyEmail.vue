@@ -1,13 +1,14 @@
 <script setup>
 import { computed } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import AuthLayout from '@/Layouts/AuthLayout.vue';
 
 const props = defineProps({
     status: String,
 });
+
+const page = usePage();
+const branding = computed(() => page.props.branding || {});
 
 const form = useForm({});
 
@@ -21,42 +22,45 @@ const verificationLinkSent = computed(() => props.status === 'verification-link-
 <template>
     <Head title="Email Verification" />
 
-    <AuthenticationCard>
-        <template #logo>
-            <AuthenticationCardLogo />
-        </template>
+    <AuthLayout>
+        <section class="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
+            <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Verify email</h1>
+            <p class="mt-2 text-sm text-slate-600">
+                Before continuing, could you verify your email address by clicking on the link we just emailed to you? If you didn't receive the email, we will gladly send you another.
+            </p>
 
-        <div class="mb-4 text-sm text-gray-600">
-            Before continuing, could you verify your email address by clicking on the link we just emailed to you? If you didn't receive the email, we will gladly send you another.
-        </div>
+            <div v-if="verificationLinkSent" class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                A new verification link has been sent to the email address you provided in your profile settings.
+            </div>
 
-        <div v-if="verificationLinkSent" class="mb-4 font-medium text-sm text-green-600">
-            A new verification link has been sent to the email address you provided in your profile settings.
-        </div>
+            <form @submit.prevent="submit" class="mt-6 space-y-4">
+                <button
+                    type="submit"
+                    :disabled="form.processing"
+                    class="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                    :style="{ backgroundColor: branding.primary_color || 'var(--brand-primary)' }"
+                >
+                    <span v-if="form.processing">Sending...</span>
+                    <span v-else>Resend Verification Email</span>
+                </button>
 
-        <form @submit.prevent="submit">
-            <div class="mt-4 flex items-center justify-between">
-                <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Resend Verification Email
-                </PrimaryButton>
-
-                <div>
+                <div class="flex items-center justify-between text-sm">
                     <Link
                         :href="route('profile.show')"
-                        class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        class="text-[var(--brand-primary)] hover:text-[var(--brand-primary-hover)]"
                     >
-                        Edit Profile</Link>
-
+                        Edit Profile
+                    </Link>
                     <Link
                         :href="route('logout')"
                         method="post"
                         as="button"
-                        class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ms-2"
+                        class="text-slate-600 hover:text-slate-900"
                     >
                         Log Out
                     </Link>
                 </div>
-            </div>
-        </form>
-    </AuthenticationCard>
+            </form>
+        </section>
+    </AuthLayout>
 </template>

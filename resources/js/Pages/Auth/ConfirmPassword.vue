@@ -1,12 +1,10 @@
 <script setup>
-import { ref } from 'vue';
-import { Head, useForm } from '@inertiajs/vue3';
-import AuthenticationCard from '@/Components/AuthenticationCard.vue';
-import AuthenticationCardLogo from '@/Components/AuthenticationCardLogo.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
+import { ref, computed } from 'vue';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+import AuthLayout from '@/Layouts/AuthLayout.vue';
+
+const page = usePage();
+const branding = computed(() => page.props.branding || {});
 
 const form = useForm({
     password: '',
@@ -18,7 +16,6 @@ const submit = () => {
     form.post(route('password.confirm'), {
         onFinish: () => {
             form.reset();
-
             passwordInput.value.focus();
         },
     });
@@ -28,36 +25,40 @@ const submit = () => {
 <template>
     <Head title="Secure Area" />
 
-    <AuthenticationCard>
-        <template #logo>
-            <AuthenticationCardLogo />
-        </template>
+    <AuthLayout>
+        <section class="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
+            <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Confirm password</h1>
+            <p class="mt-2 text-sm text-slate-600">
+                This is a secure area of the application. Please confirm your password before continuing.
+            </p>
 
-        <div class="mb-4 text-sm text-gray-600">
-            This is a secure area of the application. Please confirm your password before continuing.
-        </div>
+            <form @submit.prevent="submit" class="mt-6 space-y-4">
+                <div>
+                    <label for="password" class="mb-2 block text-sm font-medium text-slate-700">Password</label>
+                    <input
+                        id="password"
+                        ref="passwordInput"
+                        v-model="form.password"
+                        type="password"
+                        required
+                        autocomplete="current-password"
+                        autofocus
+                        placeholder="Enter your password"
+                        class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-surface)]"
+                    />
+                    <p v-if="form.errors.password" class="mt-2 text-sm text-rose-600">{{ form.errors.password }}</p>
+                </div>
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="password" value="Password" />
-                <TextInput
-                    id="password"
-                    ref="passwordInput"
-                    v-model="form.password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    required
-                    autocomplete="current-password"
-                    autofocus
-                />
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div class="flex justify-end mt-4">
-                <PrimaryButton class="ms-4" :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                    Confirm
-                </PrimaryButton>
-            </div>
-        </form>
-    </AuthenticationCard>
+                <button
+                    type="submit"
+                    :disabled="form.processing"
+                    class="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                    :style="{ backgroundColor: branding.primary_color || 'var(--brand-primary)' }"
+                >
+                    <span v-if="form.processing">Confirming...</span>
+                    <span v-else>Confirm</span>
+                </button>
+            </form>
+        </section>
+    </AuthLayout>
 </template>
