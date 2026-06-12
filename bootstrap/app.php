@@ -29,11 +29,6 @@ return Application::configure(basePath: dirname(__DIR__))
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
-
-        ]);
-
-        $middleware->group('web', [
-            HandleInertiaRequests::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (app()->environment('production')) {
+            return;
+        }
+
         // Seeding users must not write to activity_log: that table is created by
         // a later migration, and seed data should not generate audit entries.
         app(\Spatie\Activitylog\Support\ActivityLogStatus::class)->disable();

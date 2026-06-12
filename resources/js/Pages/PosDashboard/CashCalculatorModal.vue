@@ -87,11 +87,11 @@ const emit = defineEmits([
 
                     <div class="grid grid-cols-3 gap-2">
                         <button
-                            v-for="key in ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', 'âŒ«']"
+                            v-for="key in ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '⌫']"
                             :key="`cash-key-${key}`"
                             type="button"
                             class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-100"
-                            @click="key === 'âŒ«' ? emit('backspace') : emit('append', key)"
+                            @click="key === '⌫' ? emit('backspace') : emit('append', key)"
                         >
                             {{ key }}
                         </button>

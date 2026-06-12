@@ -25,6 +25,10 @@ class MayaCheckoutService
             throw new RuntimeException('Maya API credentials are not configured.');
         }
 
+        if (str_contains($baseUrl, 'sandbox') && app()->environment('production')) {
+            throw new RuntimeException('Maya sandbox URL cannot be used in production.');
+        }
+
         return new self($publicKey, $secretKey, rtrim($baseUrl, '/'));
     }
 
