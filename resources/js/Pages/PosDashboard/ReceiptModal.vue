@@ -1,97 +1,69 @@
 <script setup>
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import Tag from "primevue/tag";
+
 defineProps({
-    open: {
-        type: Boolean,
-        default: false,
-    },
-    receipt: {
-        type: Object,
-        default: null,
-    },
-    formatMoney: {
-        type: Function,
-        required: true,
-    },
+    open: { type: Boolean, default: false },
+    receipt: { type: Object, default: null },
+    formatMoney: { type: Function, required: true },
 });
 
 const emit = defineEmits(["close", "print"]);
 </script>
 
 <template>
-    <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
+    <Dialog
+        :visible="open && Boolean(receipt)"
+        modal
+        header="Sale completed"
+        class="w-[calc(100vw-2rem)] max-w-lg"
+        :draggable="false"
+        @update:visible="!$event && emit('close')"
     >
-        <div
-            v-if="open && receipt"
-            class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-4"
-            @click.self="emit('close')"
-        >
-            <section role="dialog" aria-label="Receipt" aria-modal="true" class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
-                <div class="border-b border-slate-200 px-5 py-4">
-                    <h3 class="text-lg font-semibold text-slate-900">Receipt</h3>
-                    <p class="text-xs text-slate-500">{{ receipt.receipt_number }} | {{ receipt.date }}</p>
+        <template v-if="receipt">
+            <div class="flex items-start justify-between gap-4 border-b border-dashed border-[var(--border-subtle)] pb-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">Receipt</p>
+                    <p class="font-display mt-1 text-lg font-bold">{{ receipt.receipt_number }}</p>
+                    <p class="mt-0.5 text-xs text-[var(--text-secondary)]">{{ receipt.date }}</p>
                 </div>
+                <Tag :value="receipt.payment_method" severity="success" />
+            </div>
 
-                <div class="max-h-[60vh] space-y-3 overflow-y-auto px-5 py-4">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-slate-500">Payment</span>
-                        <span class="font-semibold uppercase text-slate-900">{{ receipt.payment_method }}</span>
-                    </div>
-                    <div
-                        v-for="item in receipt.items"
-                        :key="`${item.name}-${item.quantity}`"
-                        class="flex items-center justify-between border-b border-dashed border-slate-200 pb-2 text-sm"
-                    >
-                        <p class="text-slate-700">{{ item.name }} x{{ item.quantity }}</p>
-                        <p class="font-semibold text-slate-900">{{ formatMoney(item.subtotal) }}</p>
-                    </div>
-
-                    <div class="space-y-1.5 rounded-xl bg-slate-50 p-3 text-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-500">Subtotal</span>
-                            <span class="text-slate-900">{{ formatMoney(receipt.subtotal) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between border-t border-slate-200 pt-1 font-semibold">
-                            <span class="text-slate-800">Total</span>
-                            <span class="text-slate-900">{{ formatMoney(receipt.total) }}</span>
-                        </div>
-                        <div
-                            v-if="receipt.payment_method === 'cash' && receipt.cash_received !== undefined"
-                            class="flex items-center justify-between border-t border-slate-200 pt-1"
-                        >
-                            <span class="text-slate-800">Cash Received</span>
-                            <span class="text-slate-900">{{ formatMoney(receipt.cash_received) }}</span>
-                        </div>
-                        <div
-                            v-if="receipt.payment_method === 'cash' && receipt.change !== undefined"
-                            class="flex items-center justify-between"
-                        >
-                            <span class="text-slate-800">Change</span>
-                            <span class="text-slate-900">{{ formatMoney(receipt.change) }}</span>
-                        </div>
-                    </div>
+            <div class="hide-scrollbar max-h-[45vh] space-y-3 overflow-y-auto py-4">
+                <div
+                    v-for="item in receipt.items"
+                    :key="`${item.name}-${item.quantity}`"
+                    class="flex items-center justify-between gap-4 text-sm"
+                >
+                    <p class="min-w-0 truncate text-[var(--text-secondary)]">{{ item.name }} x{{ item.quantity }}</p>
+                    <p class="shrink-0 font-bold text-[var(--text-primary)]">{{ formatMoney(item.subtotal) }}</p>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-2 gap-3 border-t border-slate-200 px-5 py-4">
-                    <button
-                        class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                        @click="emit('close')"
-                    >
-                        Close
-                    </button>
-                    <!-- <button
-                        class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)]"
-                        @click="emit('print')"
-                    >
-                        Print
-                    </button> -->
+            <div class="space-y-2 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)] p-4 text-sm">
+                <div class="flex items-center justify-between text-[var(--text-secondary)]">
+                    <span>Subtotal</span>
+                    <span>{{ formatMoney(receipt.subtotal) }}</span>
                 </div>
-            </section>
-        </div>
-    </Transition>
+                <div v-if="receipt.payment_method === 'cash' && receipt.cash_received !== undefined" class="flex items-center justify-between text-[var(--text-secondary)]">
+                    <span>Cash received</span>
+                    <span>{{ formatMoney(receipt.cash_received) }}</span>
+                </div>
+                <div v-if="receipt.payment_method === 'cash' && receipt.change !== undefined" class="flex items-center justify-between text-[var(--text-secondary)]">
+                    <span>Change</span>
+                    <span>{{ formatMoney(receipt.change) }}</span>
+                </div>
+                <div class="flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
+                    <span class="font-bold">Total</span>
+                    <span class="font-display text-2xl font-bold">{{ formatMoney(receipt.total) }}</span>
+                </div>
+            </div>
+        </template>
+
+        <template #footer>
+            <Button label="Start next sale" icon="pi pi-check" @click="emit('close')" />
+        </template>
+    </Dialog>
 </template>

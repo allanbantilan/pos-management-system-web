@@ -1,95 +1,81 @@
 <script setup>
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+import RadioButton from "primevue/radiobutton";
+
 defineProps({
-    open: {
-        type: Boolean,
-        default: false,
-    },
-    selectedPaymentMethod: {
-        type: String,
-        default: "cash",
-    },
-    isProcessing: {
-        type: Boolean,
-        default: false,
-    },
-    grandTotal: {
-        type: Number,
-        default: 0,
-    },
-    formatMoney: {
-        type: Function,
-        required: true,
-    },
+    open: { type: Boolean, default: false },
+    selectedPaymentMethod: { type: String, default: "cash" },
+    isProcessing: { type: Boolean, default: false },
+    grandTotal: { type: Number, default: 0 },
+    formatMoney: { type: Function, required: true },
 });
 
 const emit = defineEmits(["close", "proceed", "update:selectedPaymentMethod"]);
+
+const methods = [
+    {
+        value: "cash",
+        label: "Cash",
+        detail: "Enter cash received and calculate change",
+        icon: "pi-money-bill",
+    },
+    {
+        value: "maya_checkout",
+        label: "Maya checkout",
+        detail: "Redirect to Maya card or wallet payment",
+        icon: "pi-credit-card",
+    },
+];
 </script>
 
 <template>
-    <Transition
-        enter-active-class="transition-opacity duration-200"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="transition-opacity duration-200"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
+    <Dialog
+        :visible="open"
+        modal
+        header="Choose payment method"
+        class="w-[calc(100vw-2rem)] max-w-md"
+        :draggable="false"
+        @update:visible="!$event && emit('close')"
     >
-        <div
-            v-if="open"
-            class="fixed inset-0 z-[65] flex items-center justify-center bg-slate-900/50 p-4"
-            @click.self="emit('close')"
-        >
-            <section role="dialog" aria-label="Checkout" aria-modal="true" class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-xl">
-                <h3 class="text-lg font-semibold text-slate-900">Choose payment method</h3>
-                <p class="mt-1 text-sm text-slate-600">
-                    Total: <span class="font-semibold text-slate-900">{{ formatMoney(grandTotal) }}</span>
-                </p>
+        <p class="text-sm text-[var(--text-secondary)]">Select how the customer will pay</p>
+        <p class="font-display mt-1 text-3xl font-bold text-[var(--text-primary)]">{{ formatMoney(grandTotal) }}</p>
 
-                <div class="mt-4 space-y-2">
-                    <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
-                        <span class="text-sm font-medium text-slate-800">Cash</span>
-                        <input
-                            :checked="selectedPaymentMethod === 'cash'"
-                            type="radio"
-                            value="cash"
-                            class="h-4 w-4"
-                            @change="emit('update:selectedPaymentMethod', 'cash')"
-                        />
-                    </label>
-                    <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
-                        <span class="text-sm font-medium text-slate-800">Maya QR (Scan to Pay)</span>
-                        <input
-                            :checked="selectedPaymentMethod === 'maya_checkout'"
-                            type="radio"
-                            value="maya_checkout"
-                            class="h-4 w-4"
-                            @change="emit('update:selectedPaymentMethod', 'maya_checkout')"
-                        />
-                    </label>
-                </div>
-
-                <div class="mt-5 grid grid-cols-2 gap-3">
-                    <button
-                        class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                        @click="emit('close')"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        :disabled="isProcessing"
-                        class="rounded-xl bg-[var(--pos-primary)] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                        @click="emit('proceed')"
-                    >
-                        {{
-                            isProcessing
-                                ? "Processing..."
-                                : selectedPaymentMethod === "cash"
-                                  ? "Next"
-                                  : "Pay now"
-                        }}
-                    </button>
-                </div>
-            </section>
+        <div class="mt-5 space-y-2">
+            <label
+                v-for="method in methods"
+                :key="method.value"
+                :class="[
+                    'flex cursor-pointer items-center gap-3 border p-3 transition',
+                    selectedPaymentMethod === method.value
+                        ? 'border-[var(--brand-primary)] bg-[var(--brand-surface)]'
+                        : 'border-[var(--border-subtle)] hover:border-[var(--brand-primary)]',
+                ]"
+            >
+                <span :class="['pi text-lg text-[var(--brand-primary)]', method.icon]"></span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-bold text-[var(--text-primary)]">{{ method.label }}</span>
+                    <span class="block text-xs text-[var(--text-secondary)]">{{ method.detail }}</span>
+                </span>
+                <RadioButton
+                    :model-value="selectedPaymentMethod"
+                    :input-id="method.value"
+                    name="payment-method"
+                    :value="method.value"
+                    @update:model-value="emit('update:selectedPaymentMethod', $event)"
+                />
+            </label>
         </div>
-    </Transition>
+
+        <template #footer>
+            <Button label="Cancel" severity="secondary" text @click="emit('close')" />
+            <Button
+                :label="selectedPaymentMethod === 'cash' ? 'Continue to cash' : 'Pay with Maya'"
+                icon="pi pi-arrow-right"
+                icon-pos="right"
+                :loading="isProcessing"
+                @click="emit('proceed')"
+            />
+        </template>
+    </Dialog>
 </template>

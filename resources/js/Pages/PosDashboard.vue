@@ -2,7 +2,6 @@
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import ToastMessage from "./PosDashboard/ToastMessage.vue";
 import RecentReceiptsPanel from "./PosDashboard/RecentReceiptsPanel.vue";
 import CategoriesSidebar from "./PosDashboard/CategoriesSidebar.vue";
 import CartDrawer from "./PosDashboard/CartDrawer.vue";
@@ -21,6 +20,8 @@ import InputIcon from "primevue/inputicon";
 import InputText from "primevue/inputtext";
 import Paginator from "primevue/paginator";
 import Skeleton from "primevue/skeleton";
+import Toast from "primevue/toast";
+import { useToast } from "primevue/usetoast";
 
 const CART_STORAGE_KEY = "pos_cart";
 
@@ -72,13 +73,10 @@ const isProcessingCheckout = ref(false);
 const receiptData = ref(null);
 const showReceiptModal = ref(false);
 const showFailedPaymentModal = ref(false);
-const showToast = ref(false);
-const toastMessage = ref("");
-const toastTone = ref("success");
 const cashReceivedInput = ref("");
 const cashCalculatorError = ref("");
 let searchDebounceTimer = null;
-let toastTimer = null;
+const toast = useToast();
 const page = usePage();
 const fallbackTheme = {
     pos_name: "Fast Food Kiosk",
@@ -212,9 +210,6 @@ onBeforeUnmount(() => {
         clearTimeout(searchDebounceTimer);
     }
 
-    if (toastTimer) {
-        clearTimeout(toastTimer);
-    }
 });
 
 const goToPage = (page) => {
@@ -245,17 +240,12 @@ const isCashSufficient = computed(
 );
 
 const showToastMessage = (message, tone = "success") => {
-    toastMessage.value = message;
-    toastTone.value = tone;
-    showToast.value = true;
-
-    if (toastTimer) {
-        clearTimeout(toastTimer);
-    }
-
-    toastTimer = setTimeout(() => {
-        showToast.value = false;
-    }, 3000);
+    toast.add({
+        severity: tone === "danger" ? "error" : "success",
+        summary: tone === "danger" ? "Action needed" : "Sale updated",
+        detail: message,
+        life: 3000,
+    });
 };
 
 watch(cart, (newCart) => {
@@ -511,7 +501,7 @@ onMounted(() => {
                 class="pointer-events-none absolute inset-0"
             ></div>
 
-            <ToastMessage :show="showToast" :tone="toastTone" :message="toastMessage" />
+            <Toast position="bottom-right" />
 
             <header class="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--surface-panel)]/95 backdrop-blur">
                 <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
