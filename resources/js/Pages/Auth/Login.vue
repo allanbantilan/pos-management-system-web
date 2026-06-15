@@ -1,17 +1,16 @@
 <script setup>
-import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
-import { computed, ref } from "vue";
+import { Head, Link, useForm } from "@inertiajs/vue3";
 import AuthLayout from "@/Layouts/AuthLayout.vue";
-import { hexToRgba } from "@/utils/color";
+import Button from "primevue/button";
+import Checkbox from "primevue/checkbox";
+import InputText from "primevue/inputtext";
+import Message from "primevue/message";
+import Password from "primevue/password";
 
 const props = defineProps({
     canResetPassword: Boolean,
     status: String,
 });
-
-const page = usePage();
-const branding = computed(() => page.props.branding || {});
-const showPassword = ref(false);
 
 const form = useForm({
     email: "",
@@ -33,22 +32,19 @@ const submit = () => {
     <Head title="Sign In" />
 
     <AuthLayout>
-        <section class="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8">
-            <div class="mb-6">
-                <h2 class="text-3xl font-semibold tracking-tight text-slate-900">Sign in</h2>
+        <section class="w-full">
+            <div class="mb-8">
+                <p class="text-xs font-bold uppercase tracking-[0.22em] text-[var(--brand-primary)]">Secure access</p>
+                <h2 class="font-display mt-2 text-4xl font-bold tracking-tight text-[var(--text-primary)]">Open your register</h2>
+                <p class="mt-2 text-sm text-[var(--text-secondary)]">Sign in to start processing sales and managing your shift.</p>
             </div>
 
-            <div
-                v-if="status"
-                class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
-            >
-                {{ status }}
-            </div>
+            <Message v-if="status" severity="success" class="mb-5">{{ status }}</Message>
 
             <form @submit.prevent="submit" class="space-y-5">
                 <div>
                     <label for="email" class="mb-2 block text-sm font-medium text-slate-700">Email</label>
-                    <input
+                    <InputText
                         id="email"
                         v-model="form.email"
                         type="email"
@@ -56,7 +52,9 @@ const submit = () => {
                         autofocus
                         autocomplete="username"
                         placeholder="name@company.com"
-                        class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-surface)]"
+                        fluid
+                        size="large"
+                        :invalid="Boolean(form.errors.email)"
                     />
                     <p v-if="form.errors.email" class="mt-2 text-sm text-rose-600">
                         {{ form.errors.email }}
@@ -74,47 +72,37 @@ const submit = () => {
                             Forgot password?
                         </Link>
                     </div>
-                    <div class="relative">
-                        <input
+                    <Password
                             id="password"
                             v-model="form.password"
-                            :type="showPassword ? 'text' : 'password'"
                             required
                             autocomplete="current-password"
                             placeholder="Enter your password"
-                            class="block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 pr-11 text-sm text-slate-900 placeholder-slate-400 outline-none transition focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-surface)]"
+                            fluid
+                            toggle-mask
+                            :feedback="false"
+                            input-class="w-full"
+                            :invalid="Boolean(form.errors.password)"
                         />
-                        <button
-                            type="button"
-                            @click="showPassword = !showPassword"
-                            class="absolute inset-y-0 right-0 inline-flex items-center px-3 text-slate-500 hover:text-slate-700"
-                        >
-                            {{ showPassword ? "Hide" : "Show" }}
-                        </button>
-                    </div>
                     <p v-if="form.errors.password" class="mt-2 text-sm text-rose-600">
                         {{ form.errors.password }}
                     </p>
                 </div>
 
-                <label class="flex items-center gap-3 text-sm text-slate-600">
-                    <input
-                        v-model="form.remember"
-                        type="checkbox"
-                        class="h-4 w-4 rounded border-slate-300 text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
-                    />
+                <label class="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+                    <Checkbox v-model="form.remember" binary input-id="remember" />
                     Keep me signed in
                 </label>
 
-                <button
+                <Button
                     type="submit"
-                    :disabled="form.processing"
-                    class="inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                    :style="{ backgroundColor: branding.primary_color || 'var(--brand-primary)' }"
-                >
-                    <span v-if="form.processing">Signing in...</span>
-                    <span v-else>Sign In</span>
-                </button>
+                    label="Open register"
+                    icon="pi pi-arrow-right"
+                    icon-pos="right"
+                    size="large"
+                    class="w-full"
+                    :loading="form.processing"
+                />
             </form>
 
             <p class="mt-6 text-center text-sm text-slate-600">
