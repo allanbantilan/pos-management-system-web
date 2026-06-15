@@ -17,13 +17,14 @@ defineProps({
 <template>
     <AppLayout title="Profile">
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Profile
+            <h2 class="font-display mt-2 text-4xl font-bold tracking-tight text-[var(--text-primary)]">
+                Account workspace
             </h2>
+            <p class="mt-2 max-w-2xl text-sm text-[var(--text-secondary)]">Manage your operator identity, security, sessions, and receipt history.</p>
         </template>
 
         <div>
-            <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
                 <div v-if="$page.props.jetstream.canUpdateProfileInformation">
                     <UpdateProfileInformationForm :user="$page.props.auth.user" />
 
