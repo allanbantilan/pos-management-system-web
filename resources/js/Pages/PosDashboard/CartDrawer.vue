@@ -58,7 +58,7 @@ const emit = defineEmits(["close", "remove", "updateQty", "checkout", "clear"]);
             role="dialog"
             aria-label="Shopping cart"
             aria-modal="true"
-            class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white"
+            class="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-slate-200 bg-white xl:hidden"
         >
             <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                 <div>

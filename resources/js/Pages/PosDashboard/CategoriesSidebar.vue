@@ -18,9 +18,9 @@ const emit = defineEmits(["select", "toggle"]);
 </script>
 
 <template>
-    <aside class="flex h-auto flex-col rounded-2xl border border-[var(--pos-border)] bg-white p-3 shadow-sm sm:h-[320px] sm:p-4 lg:h-[360px]">
+    <aside class="flex h-auto flex-col border border-[var(--border-subtle)] bg-[var(--surface-panel)] p-3 shadow-[0_14px_35px_rgba(28,25,23,0.06)] sm:p-4 lg:sticky lg:top-[7.25rem] lg:max-h-[calc(100vh-9rem)]">
         <div class="mb-2 flex min-h-7 items-center justify-between gap-2 sm:mb-3">
-            <h3 class="flex items-center text-sm font-semibold uppercase leading-none tracking-wide text-slate-500">
+            <h3 class="flex items-center text-[0.68rem] font-bold uppercase leading-none tracking-[0.2em] text-[var(--text-secondary)]">
                 Categories
             </h3>
             <button
@@ -41,10 +41,10 @@ const emit = defineEmits(["select", "toggle"]);
                 v-for="category in categories"
                 :key="category"
                 :class="[
-                    'w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition',
+                    'w-full border-l-2 px-3 py-2.5 text-left text-sm font-bold transition',
                     selectedCategory === category
-                        ? 'bg-[var(--pos-primary)] text-white'
-                        : 'bg-[var(--pos-surface)] text-slate-700 hover:brightness-95',
+                        ? 'border-[var(--pos-primary)] bg-[var(--pos-primary)] text-white'
+                        : 'border-transparent bg-[var(--surface-muted)] text-[var(--text-primary)] hover:border-[var(--pos-primary)]',
                 ]"
                 @click="emit('select', category)"
             >

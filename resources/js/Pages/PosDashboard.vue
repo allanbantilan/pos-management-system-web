@@ -10,9 +10,17 @@ import CheckoutDialog from "./PosDashboard/CheckoutDialog.vue";
 import CashCalculatorModal from "./PosDashboard/CashCalculatorModal.vue";
 import FailedPaymentModal from "./PosDashboard/FailedPaymentModal.vue";
 import ReceiptModal from "./PosDashboard/ReceiptModal.vue";
+import CurrentSalePanel from "./PosDashboard/CurrentSalePanel.vue";
 import axios from "axios";
 import { hexToRgba, isHexColor } from "@/utils/color";
 import { formatMoney, toNumber } from "@/utils/format";
+import Badge from "primevue/badge";
+import Button from "primevue/button";
+import IconField from "primevue/iconfield";
+import InputIcon from "primevue/inputicon";
+import InputText from "primevue/inputtext";
+import Paginator from "primevue/paginator";
+import Skeleton from "primevue/skeleton";
 
 const CART_STORAGE_KEY = "pos_cart";
 
@@ -255,9 +263,19 @@ watch(cart, (newCart) => {
 }, { deep: true });
 
 const addToCart = (itemToAdd) => {
+    if (toNumber(itemToAdd.stock) <= 0) {
+        showToastMessage("This item is out of stock", "danger");
+        return;
+    }
+
     const existingItem = cart.value.find((item) => item.id === itemToAdd.id);
 
     if (existingItem) {
+        if (existingItem.quantity >= toNumber(existingItem.stock)) {
+            showToastMessage("No more stock is available", "danger");
+            return;
+        }
+
         existingItem.quantity++;
     } else {
         cart.value.push({
@@ -282,6 +300,11 @@ const updateQuantity = (itemId, change) => {
     const item = cart.value.find((entry) => entry.id === itemId);
 
     if (!item) {
+        return;
+    }
+
+    if (change > 0 && item.quantity >= toNumber(item.stock)) {
+        showToastMessage("No more stock is available", "danger");
         return;
     }
 
@@ -482,7 +505,7 @@ onMounted(() => {
     <Head title="POS Dashboard" />
 
     <AuthenticatedLayout>
-        <div :style="themeStyle" class="relative min-h-screen overflow-hidden bg-[var(--pos-background)] text-slate-900">
+        <div :style="themeStyle" class="relative min-h-screen overflow-hidden bg-[var(--surface-canvas)] text-[var(--text-primary)]">
             <div
                 :style="dashboardOverlayStyle"
                 class="pointer-events-none absolute inset-0"
@@ -490,21 +513,22 @@ onMounted(() => {
 
             <ToastMessage :show="showToast" :tone="toastTone" :message="toastMessage" />
 
-            <header class="sticky top-0 z-30 border-b border-[var(--pos-border)] bg-white/90 backdrop-blur">
-                <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-4 sm:gap-4 sm:px-6 lg:px-10 2xl:px-12">
+            <header class="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--surface-panel)]/95 backdrop-blur">
+                <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
                     <div class="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto sm:flex-1 sm:justify-start">
                         <div class="flex min-w-0 items-center gap-3">
-                            <div class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--pos-primary)] text-white shadow-lg">
+                            <div class="inline-flex h-11 w-11 items-center justify-center overflow-hidden bg-[var(--pos-primary)] text-white shadow-lg">
                                 <img
                                     v-if="logoUrl"
                                     :src="logoUrl"
                                     :alt="`${kioskName} logo`"
-                                    class="h-full w-full rounded-2xl object-cover"
+                                    class="h-full w-full object-cover"
                                 />
                                 <span v-else class="text-sm font-bold">K</span>
                             </div>
                             <div class="min-w-0">
-                                <h1 class="truncate text-xl font-semibold tracking-tight sm:text-2xl">
+                                <p class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Point of sale</p>
+                                <h1 class="font-display truncate text-lg font-bold tracking-tight sm:text-xl">
                                     {{ kioskName }}
                                 </h1>
                             </div>
@@ -565,7 +589,7 @@ onMounted(() => {
 
                         <button
                             @click="showCart = true"
-                            class="relative inline-flex items-center gap-2 rounded-xl bg-[var(--pos-primary)] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] sm:px-4 sm:py-2.5 sm:text-sm"
+                            class="relative inline-flex items-center gap-2 rounded-lg bg-[var(--pos-primary)] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] sm:px-4 sm:py-2.5 sm:text-sm xl:hidden"
                         >
                             Cart
                             <span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-300 px-1 text-[10px] font-bold text-slate-900 sm:h-6 sm:min-w-6 sm:px-1.5 sm:text-xs">
@@ -621,16 +645,13 @@ onMounted(() => {
                     </div>
 
                     <div class="order-3 w-full sm:order-2 sm:ml-auto sm:w-auto sm:min-w-[360px]">
-                        <div class="relative">
-                            <span class="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center pl-4 text-slate-400">
-                                Search
-                            </span>
-                            <input
+                        <IconField>
+                            <InputIcon class="pi pi-search" />
+                            <InputText
                                 v-model="searchQuery"
-                                type="text"
-                                placeholder="Search menu"
+                                placeholder="Search product, SKU, or barcode"
                                 aria-label="Search menu items"
-                                class="block w-full rounded-xl border border-[var(--pos-border)] bg-white py-2.5 pl-20 pr-10 text-sm outline-none transition focus:border-[var(--pos-primary)] focus:ring-2 focus:ring-[var(--pos-surface)]"
+                                class="w-full"
                             />
                             <button
                                 v-if="searchQuery"
@@ -642,14 +663,14 @@ onMounted(() => {
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
                                     <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                                 </svg>
-                            </button>
-                        </div>
+                            ></button>
+                        </IconField>
                     </div>
                 </div>
             </header>
 
-            <main class="relative mx-auto w-full px-4 py-6 sm:px-6 lg:px-10 2xl:px-12">
-                <section class="grid items-start gap-6 lg:grid-cols-[240px,1fr]">
+            <main class="relative mx-auto w-full px-4 py-5 sm:px-6 lg:px-8">
+                <section class="grid items-start gap-4 lg:grid-cols-[200px,minmax(0,1fr)] xl:grid-cols-[200px,minmax(0,1fr),340px]">
                     <CategoriesSidebar
                         :categories="categories"
                         :selectedCategory="selectedCategory"
@@ -658,78 +679,85 @@ onMounted(() => {
                         @select="(category) => (selectedCategory = category)"
                     />
 
-                    <section>
+                    <section class="min-w-0">
                         <div class="mb-4 flex items-center justify-between">
-                            <h2 class="text-xl font-semibold tracking-tight">
-                                {{ selectedCategory === "All" ? "Menu" : selectedCategory }}
-                            </h2>
+                            <div>
+                                <p class="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Product workspace</p>
+                                <h2 class="font-display mt-1 text-2xl font-bold tracking-tight">
+                                    {{ selectedCategory === "All" ? "All products" : selectedCategory }}
+                                </h2>
+                            </div>
+                            <Badge :value="`${items.total || 0} products`" severity="secondary" />
                         </div>
                         <div class="relative">
-                            <div v-if="isLoadingItems" class="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/60 backdrop-blur-sm">
-                                <span class="text-sm font-semibold text-slate-500">Loading items...</span>
+                            <div v-if="isLoadingItems" class="absolute inset-0 z-10 grid grid-cols-2 gap-3 bg-[var(--surface-canvas)]/80 backdrop-blur-sm md:grid-cols-3 2xl:grid-cols-4">
+                                <Skeleton v-for="index in 8" :key="index" height="15rem" />
                             </div>
-                            <div v-if="paginatedItems.length > 0" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                            <div v-if="paginatedItems.length > 0" class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-4">
                                 <article
                                     v-for="item in paginatedItems"
                                     :key="item.id"
-                                    class="group overflow-hidden rounded-3xl border border-[var(--pos-border)] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                                    class="group overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-panel)] transition duration-200 hover:-translate-y-0.5 hover:border-[var(--brand-primary)] hover:shadow-[0_14px_35px_rgba(28,25,23,0.10)]"
                                 >
-                                    <div class="relative h-64 overflow-hidden bg-[var(--pos-surface)]">
+                                    <div class="relative h-32 overflow-hidden bg-[var(--surface-muted)] sm:h-40">
                                         <img
-                                            :src="item.image"
+                                            :src="item.image || '/images/placeholder-item.svg'"
                                             :alt="item.name"
                                             class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                                             @error="$event.target.src = '/images/placeholder-item.svg'"
                                         />
                                         <span
-                                            class="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold text-slate-700"
+                                            class="absolute left-2 top-2 bg-[var(--surface-panel)]/95 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wide text-[var(--text-secondary)]"
                                         >
                                             {{ item.category }}
                                         </span>
+                                        <span
+                                            :class="[
+                                                'absolute bottom-2 right-2 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wide',
+                                                item.stock > 0
+                                                    ? 'bg-emerald-600 text-white'
+                                                    : 'bg-rose-600 text-white',
+                                            ]"
+                                        >
+                                            {{ item.stock > 0 ? `${item.stock} in stock` : "Out of stock" }}
+                                        </span>
                                     </div>
 
-                                <div class="space-y-3 p-4">
+                                <div class="space-y-3 p-3">
                                     <div>
-                                        <h3 class="line-clamp-1 text-lg font-bold text-slate-900">
+                                        <h3 class="font-display line-clamp-1 text-base font-bold text-[var(--text-primary)]">
                                             {{ item.name }}
                                         </h3>
+                                        <p class="mt-0.5 truncate text-[0.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{{ item.sku }}</p>
                                     </div>
 
                                     <div class="flex items-center justify-between">
-                                        <p class="text-lg font-semibold text-slate-900">
+                                        <p class="text-base font-bold text-[var(--text-primary)]">
                                             {{ formatMoney(item.price) }}
                                         </p>
-                                        <button
+                                        <Button
                                             @click="addToCart(item)"
-                                            class="rounded-xl bg-[var(--pos-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)]"
-                                        >
-                                            Add
-                                        </button>
+                                            icon="pi pi-plus"
+                                            aria-label="Add product"
+                                            size="small"
+                                            :disabled="item.stock <= 0"
+                                        />
                                     </div>
                                 </div>
                             </article>
                             </div>
                             </div>
 
-                        <div v-if="paginatedItems.length > 0 && totalPages > 1" class="mt-6 flex items-center justify-center gap-3">
-                            <button
-                                @click="goToPage(currentPage - 1)"
-                                :disabled="currentPage === 1"
-                                class="rounded-xl border border-[var(--pos-border)] bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-[var(--pos-surface)] disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Previous
-                            </button>
-                            <span class="text-sm font-semibold text-slate-700">
-                                Page {{ currentPage }} of {{ totalPages }}
-                            </span>
-                            <button
-                                @click="goToPage(currentPage + 1)"
-                                :disabled="currentPage === totalPages"
-                                class="rounded-xl bg-[var(--pos-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--pos-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                                Next
-                            </button>
-                        </div>
+                        <Paginator
+                            v-if="paginatedItems.length > 0 && totalPages > 1"
+                            class="mt-5"
+                            :rows="items.per_page || 8"
+                            :total-records="items.total || 0"
+                            :first="((currentPage || 1) - 1) * (items.per_page || 8)"
+                            template="PrevPageLink CurrentPageReport NextPageLink"
+                            current-page-report-template="Page {currentPage} of {totalPages}"
+                            @page="goToPage($event.page + 1)"
+                        />
 
                         <div v-if="paginatedItems.length === 0 && !isLoadingItems" class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
                             <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -739,6 +767,19 @@ onMounted(() => {
                             <p class="mt-1 text-sm text-slate-500">Try adjusting your search or category filter.</p>
                         </div>
                     </section>
+
+                    <CurrentSalePanel
+                        :cart="cart"
+                        :cartItemCount="cartItemCount"
+                        :cartTotal="cartTotal"
+                        :grandTotal="grandTotal"
+                        :formatMoney="formatMoney"
+                        :toNumber="toNumber"
+                        @remove="removeFromCart"
+                        @updateQty="updateQuantity"
+                        @checkout="processCheckout"
+                        @clear="clearCart"
+                    />
                 </section>
             </main>
 
@@ -812,4 +853,3 @@ onMounted(() => {
     display: none;
 }
 </style>
-
