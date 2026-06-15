@@ -14,6 +14,7 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\Width;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -29,11 +30,18 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->brandName('Pos System')
+            ->brandName('POS Command Center')
             ->authGuard('backend')
             ->login()
+            ->font('Space Grotesk', 'https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700')
+            ->maxContentWidth(Width::Full)
+            ->sidebarCollapsibleOnDesktop()
+            ->darkMode()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#d45a1f'),
+                'success' => Color::hex('#16865b'),
+                'warning' => Color::hex('#b7791f'),
+                'danger' => Color::hex('#d14b4b'),
             ])
             ->navigationGroups([
                 NavigationGroup::make('POS Management'),

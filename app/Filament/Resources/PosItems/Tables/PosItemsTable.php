@@ -9,6 +9,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -20,10 +21,13 @@ class PosItemsTable
     {
         return $table
             ->columns([
+                SpatieMediaLibraryImageColumn::make('image')
+                    ->label('')
+                    ->collection('item-images')
+                    ->conversion('thumb')
+                    ->circular(),
                 TextColumn::make('name')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('sku')
+                    ->description(fn ($record): string => $record->sku)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('category')
@@ -33,9 +37,14 @@ class PosItemsTable
                     ->money('PHP')
                     ->sortable(),
                 TextColumn::make('stock')
+                    ->label('On Hand')
                     ->numeric()
+                    ->badge()
+                    ->color(fn ($record): string => $record->stock <= $record->min_stock ? 'danger' : 'success')
+                    ->description(fn ($record): string => "Reorder at {$record->min_stock}")
                     ->sortable(),
                 IconColumn::make('is_active')
+                    ->label('Available')
                     ->boolean()
                     ->sortable(),
             ])
@@ -44,6 +53,8 @@ class PosItemsTable
                     ->options(fn () => \App\Models\PosCategory::query()->orderBy('sort_order')->pluck('name', 'name')->all()),
                 TrashedFilter::make(),
             ])
+            ->striped()
+            ->defaultSort('name')
             ->recordActions([
                 EditAction::make(),
                 DeleteAction::make(),
