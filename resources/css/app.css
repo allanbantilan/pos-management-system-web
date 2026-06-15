@@ -8,79 +8,64 @@
     --brand-surface: #fef3c7;
     --brand-background: #fffbeb;
     --brand-border: #fde68a;
+    --pos-primary-50: color-mix(in srgb, var(--brand-primary) 8%, white);
+    --pos-primary-100: color-mix(in srgb, var(--brand-primary) 14%, white);
+    --pos-primary-200: color-mix(in srgb, var(--brand-primary) 24%, white);
+    --pos-primary-300: color-mix(in srgb, var(--brand-primary) 38%, white);
+    --pos-primary-400: color-mix(in srgb, var(--brand-primary) 65%, white);
+    --pos-primary-500: var(--brand-primary);
+    --pos-primary-600: var(--brand-primary);
+    --pos-primary-700: var(--brand-primary-hover);
+    --pos-primary-800: color-mix(in srgb, var(--brand-primary-hover) 82%, black);
+    --pos-primary-900: color-mix(in srgb, var(--brand-primary-hover) 64%, black);
+    --pos-primary-950: color-mix(in srgb, var(--brand-primary-hover) 45%, black);
+    --surface-canvas: #f5f2ed;
+    --surface-panel: #ffffff;
+    --surface-muted: #eeeae3;
+    --surface-strong: #1c1917;
+    --text-primary: #1c1917;
+    --text-secondary: #706a63;
+    --border-subtle: #ded8cf;
+    --status-success: #16865b;
+    --status-warning: #b7791f;
+    --status-danger: #d14b4b;
+    color-scheme: light;
+}
+
+.app-dark {
+    --surface-canvas: #100e0d;
+    --surface-panel: #1c1917;
+    --surface-muted: #292524;
+    --surface-strong: #fafaf9;
+    --text-primary: #fafaf9;
+    --text-secondary: #b8b0a7;
+    --border-subtle: #3c3733;
+    color-scheme: dark;
 }
 
 [x-cloak] {
     display: none;
 }
 
-#app .bg-amber-50 {
-    background-color: var(--brand-background) !important;
+body {
+    background: var(--surface-canvas);
+    color: var(--text-primary);
+    font-family: "Figtree", sans-serif;
 }
 
-#app .bg-amber-100,
-#app .hover\:bg-amber-100:hover {
-    background-color: var(--brand-surface) !important;
+.font-display {
+    font-family: "Space Grotesk", "Figtree", sans-serif;
 }
 
-#app .border-amber-200,
-#app .border-amber-300 {
-    border-color: var(--brand-border) !important;
-}
-
-#app .bg-orange-600 {
-    background-color: var(--brand-primary) !important;
-}
-
-#app .text-orange-600 {
-    color: var(--brand-primary) !important;
-}
-
-#app .hover\:bg-orange-500:hover,
-#app .hover\:bg-orange-700:hover {
-    background-color: var(--brand-primary-hover) !important;
-}
-
-#app .focus\:border-orange-500:focus {
-    border-color: var(--brand-primary) !important;
-}
-
-#app .focus\:ring-orange-100:focus {
-    --tw-ring-color: color-mix(in srgb, var(--brand-surface) 65%, white) !important;
-}
-
-#app .focus\:ring-orange-500:focus {
-    --tw-ring-color: var(--brand-primary) !important;
-}
-
-#app .text-blue-600,
-#app .hover\:text-blue-600:hover {
-    color: var(--brand-primary) !important;
-}
-
-#app .from-blue-600,
-#app .from-orange-600 {
-    --tw-gradient-from: var(--brand-primary) var(--tw-gradient-from-position) !important;
-    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-}
-
-#app .to-indigo-600,
-#app .to-indigo-700,
-#app .to-orange-500 {
-    --tw-gradient-to: var(--brand-primary-hover) var(--tw-gradient-to-position) !important;
-}
-
-#app .hover\:from-blue-700:hover,
-#app .hover\:from-orange-700:hover {
-    --tw-gradient-from: var(--brand-primary-hover) var(--tw-gradient-from-position) !important;
-    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
-    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
-}
-
-#app .hover\:to-indigo-700:hover,
-#app .hover\:to-orange-700:hover {
-    --tw-gradient-to: var(--brand-primary-hover) var(--tw-gradient-to-position) !important;
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
 }
 
 .fi-ta-content-ctn,
