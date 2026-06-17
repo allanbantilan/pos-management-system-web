@@ -104,13 +104,6 @@ const submit = () => {
                     :loading="form.processing"
                 />
             </form>
-
-            <p class="mt-6 text-center text-sm text-slate-600">
-                New to the platform?
-                <Link :href="route('register')" class="font-semibold text-[var(--brand-primary)] transition hover:text-[var(--brand-primary-hover)]">
-                    Create an account
-                </Link>
-            </p>
         </section>
     </AuthLayout>
 </template>
