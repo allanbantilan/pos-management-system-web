@@ -18,7 +18,7 @@ const emit = defineEmits(["select", "toggle"]);
 </script>
 
 <template>
-    <aside class="flex h-auto flex-col border border-[var(--border-subtle)] bg-[var(--surface-panel)] p-3 shadow-[0_14px_35px_rgba(28,25,23,0.06)] sm:p-4 lg:sticky lg:top-[7.25rem] lg:max-h-[calc(100vh-9rem)]">
+    <aside class="flex h-auto flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-panel)] p-3 shadow-[0_14px_35px_rgba(28,25,23,0.06)] sm:p-4 lg:sticky lg:top-[7.25rem] lg:max-h-[calc(100vh-9rem)]">
         <div class="mb-2 flex min-h-7 items-center justify-between gap-2 sm:mb-3">
             <h3 class="flex items-center text-[0.68rem] font-bold uppercase leading-none tracking-[0.2em] text-[var(--text-secondary)]">
                 Categories
@@ -41,10 +41,10 @@ const emit = defineEmits(["select", "toggle"]);
                 v-for="category in categories"
                 :key="category"
                 :class="[
-                    'w-full border-l-2 px-3 py-2.5 text-left text-sm font-bold transition',
+                    'w-full rounded-xl px-3 py-2.5 text-left text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pos-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-panel)]',
                     selectedCategory === category
-                        ? 'border-[var(--pos-primary)] bg-[var(--pos-primary)] text-white'
-                        : 'border-transparent bg-[var(--surface-muted)] text-[var(--text-primary)] hover:border-[var(--pos-primary)]',
+                        ? 'bg-[var(--pos-primary)] text-white shadow-md shadow-[var(--pos-primary)]/25'
+                        : 'bg-[var(--surface-muted)] text-[var(--text-primary)] ring-1 ring-inset ring-transparent hover:ring-[var(--pos-primary)]',
                 ]"
                 @click="emit('select', category)"
             >

@@ -14,12 +14,8 @@ import axios from "axios";
 import { hexToRgba, isHexColor } from "@/utils/color";
 import { formatMoney, toNumber } from "@/utils/format";
 import Badge from "primevue/badge";
-import Button from "primevue/button";
-import IconField from "primevue/iconfield";
-import InputIcon from "primevue/inputicon";
 import InputText from "primevue/inputtext";
 import Paginator from "primevue/paginator";
-import Skeleton from "primevue/skeleton";
 import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 
@@ -161,7 +157,18 @@ const upsertRecentReceipt = (receipt) => {
     ].slice(0, 5);
 };
 
-const paginatedItems = computed(() => props.items?.data ?? []);
+// Guard against the brief window where Inertia still holds the previous
+// category's items: only ever render rows matching the active selection, so a
+// different category's products can never flash in. Mirrors the server filter.
+const paginatedItems = computed(() => {
+    const data = props.items?.data ?? [];
+
+    if (selectedCategory.value === "All" || selectedCategory.value === "") {
+        return data;
+    }
+
+    return data.filter((item) => item.category === selectedCategory.value);
+});
 const currentPage = computed(() => props.items?.current_page ?? 1);
 const totalPages = computed(() => props.items?.last_page ?? 1);
 
@@ -181,6 +188,13 @@ const fetchItems = (page = 1, replace = false) => {
             preserveState: true,
             preserveScroll: true,
             replace,
+            onSuccess: () => {
+                // Remount the grid on fresh data so every card animates in
+                // uniformly. Without this, items that survived the client-side
+                // filter (e.g. burgers already on the "All" page) stay put while
+                // only the new ones animate, which reads as a glitch.
+                gridKey.value++;
+            },
             onFinish: () => {
                 isLoadingItems.value = false;
             },
@@ -232,6 +246,8 @@ const cartItemCount = computed(() =>
 );
 
 const showCategories = ref(false);
+const showSalePanel = ref(true);
+const gridKey = ref(0);
 const grandTotal = computed(() => cartTotal.value);
 const cashReceivedAmount = computed(() => toNumber(cashReceivedInput.value));
 const cashChangeAmount = computed(() => cashReceivedAmount.value - grandTotal.value);
@@ -481,6 +497,9 @@ onMounted(() => {
     }
 
     if (props.checkoutResult === "success") {
+        // Redirect payments (e.g. Maya) complete server-side, so the cart was
+        // never cleared client-side before the redirect. Clear it on return.
+        clearCart();
         showToastMessage("Payment successful");
     }
 
@@ -507,7 +526,7 @@ onMounted(() => {
                 <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
                     <div class="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto sm:flex-1 sm:justify-start">
                         <div class="flex min-w-0 items-center gap-3">
-                            <div class="inline-flex h-11 w-11 items-center justify-center overflow-hidden bg-[var(--pos-primary)] text-white shadow-lg">
+                            <div class="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[var(--pos-primary)] text-white shadow-lg">
                                 <img
                                     v-if="logoUrl"
                                     :src="logoUrl"
@@ -634,33 +653,37 @@ onMounted(() => {
                         </details>
                     </div>
 
-                    <div class="order-3 w-full sm:order-2 sm:ml-auto sm:w-auto sm:min-w-[360px]">
-                        <IconField>
-                            <InputIcon class="pi pi-search" />
-                            <InputText
-                                v-model="searchQuery"
-                                placeholder="Search product, SKU, or barcode"
-                                aria-label="Search menu items"
-                                class="w-full"
-                            />
-                            <button
-                                v-if="searchQuery"
-                                @click="searchQuery = ''"
-                                type="button"
-                                class="absolute inset-y-0 right-0 inline-flex items-center pr-3 text-slate-400 hover:text-slate-600"
-                                aria-label="Clear search"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
-                                    <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
-                                </svg>
-                            ></button>
-                        </IconField>
+                    <div class="relative order-3 w-full sm:order-2 sm:ml-auto sm:w-auto sm:min-w-[360px]">
+                        <span
+                            class="pi pi-search pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400"
+                            aria-hidden="true"
+                        ></span>
+                        <InputText
+                            v-model="searchQuery"
+                            placeholder="Search product, SKU, or barcode"
+                            aria-label="Search menu items"
+                            class="w-full !pl-10 !pr-10"
+                        />
+                        <button
+                            v-if="searchQuery"
+                            @click="searchQuery = ''"
+                            type="button"
+                            class="absolute right-2.5 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                            aria-label="Clear search"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4">
+                                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </header>
 
             <main class="relative mx-auto w-full px-4 py-5 sm:px-6 lg:px-8">
-                <section class="grid items-start gap-4 lg:grid-cols-[200px,minmax(0,1fr)] xl:grid-cols-[200px,minmax(0,1fr),340px]">
+                <section
+                    class="pos-grid grid items-start gap-4 lg:grid-cols-[200px,minmax(0,1fr)]"
+                    :style="{ '--sale-col': showSalePanel ? '340px' : '0px' }"
+                >
                     <CategoriesSidebar
                         :categories="categories"
                         :selectedCategory="selectedCategory"
@@ -674,22 +697,35 @@ onMounted(() => {
                             <div>
                                 <p class="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Product workspace</p>
                                 <h2 class="font-display mt-1 text-2xl font-bold tracking-tight">
-                                    {{ selectedCategory === "All" ? "All products" : selectedCategory }}
+                                    <Transition name="cat-label" mode="out-in">
+                                        <span :key="selectedCategory" class="inline-block">
+                                            {{ selectedCategory === "All" ? "All products" : selectedCategory }}
+                                        </span>
+                                    </Transition>
                                 </h2>
                             </div>
                             <Badge :value="`${items.total || 0} products`" severity="secondary" />
                         </div>
-                        <div class="relative">
-                            <div v-if="isLoadingItems" class="absolute inset-0 z-10 grid grid-cols-2 gap-3 bg-[var(--surface-canvas)]/80 backdrop-blur-sm md:grid-cols-3 2xl:grid-cols-4">
-                                <Skeleton v-for="index in 8" :key="index" height="15rem" />
-                            </div>
-                            <div v-if="paginatedItems.length > 0" class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-4">
+                        <div class="relative min-h-[20rem]">
+                            <TransitionGroup
+                                v-if="paginatedItems.length > 0"
+                                :key="gridKey"
+                                tag="div"
+                                name="card"
+                                appear
+                                :class="[
+                                    'grid grid-cols-2 gap-4 2xl:grid-cols-3',
+                                    isLoadingItems
+                                        ? 'pointer-events-none opacity-0'
+                                        : 'opacity-100 transition-opacity duration-300 ease-out',
+                                ]"
+                            >
                                 <article
                                     v-for="item in paginatedItems"
                                     :key="item.id"
-                                    class="group overflow-hidden border border-[var(--border-subtle)] bg-[var(--surface-panel)] transition duration-200 hover:-translate-y-0.5 hover:border-[var(--brand-primary)] hover:shadow-[0_14px_35px_rgba(28,25,23,0.10)]"
+                                    class="group flex flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-panel)] transition duration-200 hover:-translate-y-0.5 hover:border-[var(--brand-primary)] hover:shadow-[0_14px_35px_rgba(28,25,23,0.10)]"
                                 >
-                                    <div class="relative h-32 overflow-hidden bg-[var(--surface-muted)] sm:h-40">
+                                    <div class="relative h-44 overflow-hidden bg-[var(--surface-muted)] sm:h-52">
                                         <img
                                             :src="item.image || '/images/placeholder-item.svg'"
                                             :alt="item.name"
@@ -697,13 +733,14 @@ onMounted(() => {
                                             @error="$event.target.src = '/images/placeholder-item.svg'"
                                         />
                                         <span
-                                            class="absolute left-2 top-2 bg-[var(--surface-panel)]/95 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wide text-[var(--text-secondary)]"
+                                            class="absolute left-2.5 top-2.5 inline-flex items-center gap-1.5 rounded-full bg-white/85 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-wide text-[var(--text-primary)] shadow-sm ring-1 ring-black/5 backdrop-blur"
                                         >
+                                            <span class="h-1.5 w-1.5 rounded-full bg-[var(--pos-primary)]"></span>
                                             {{ item.category }}
                                         </span>
                                         <span
                                             :class="[
-                                                'absolute bottom-2 right-2 px-2 py-1 text-[0.65rem] font-bold uppercase tracking-wide',
+                                                'absolute bottom-2.5 right-2.5 rounded-full px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-wide shadow-sm ring-1 ring-black/5',
                                                 item.stock > 0
                                                     ? 'bg-emerald-600 text-white'
                                                     : 'bg-rose-600 text-white',
@@ -713,49 +750,50 @@ onMounted(() => {
                                         </span>
                                     </div>
 
-                                <div class="space-y-3 p-3">
+                                <div class="flex flex-1 flex-col gap-3 p-4">
                                     <div>
-                                        <h3 class="font-display line-clamp-1 text-base font-bold text-[var(--text-primary)]">
+                                        <h3 class="font-display line-clamp-1 text-lg font-bold text-[var(--text-primary)]">
                                             {{ item.name }}
                                         </h3>
                                         <p class="mt-0.5 truncate text-[0.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">{{ item.sku }}</p>
                                     </div>
 
-                                    <div class="flex items-center justify-between">
-                                        <p class="text-base font-bold text-[var(--text-primary)]">
+                                    <div class="mt-auto flex items-center justify-between gap-3">
+                                        <p class="text-xl font-bold text-[var(--text-primary)]">
                                             {{ formatMoney(item.price) }}
                                         </p>
-                                        <Button
+                                        <button
+                                            type="button"
                                             @click="addToCart(item)"
-                                            icon="pi pi-plus"
-                                            aria-label="Add product"
-                                            size="small"
+                                            :aria-label="`Add ${item.name} to cart`"
                                             :disabled="item.stock <= 0"
-                                        />
+                                            class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--pos-primary)] text-white shadow-lg shadow-[var(--pos-primary)]/30 transition duration-150 hover:bg-[var(--pos-primary-hover)] hover:shadow-xl active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pos-primary)] disabled:cursor-not-allowed disabled:bg-[var(--surface-muted)] disabled:text-[var(--text-secondary)] disabled:shadow-none"
+                                        >
+                                            <span class="pi pi-plus text-lg font-bold"></span>
+                                        </button>
                                     </div>
                                 </div>
                             </article>
+                            </TransitionGroup>
+                            <div v-else-if="!isLoadingItems" class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+                                <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                                </svg>
+                                <h3 class="mt-3 text-lg font-semibold text-slate-700">No matching items</h3>
+                                <p class="mt-1 text-sm text-slate-500">Try adjusting your search or category filter.</p>
                             </div>
-                            </div>
+                        </div>
 
                         <Paginator
-                            v-if="paginatedItems.length > 0 && totalPages > 1"
+                            v-if="!isLoadingItems && paginatedItems.length > 0 && totalPages > 1"
                             class="mt-5"
-                            :rows="items.per_page || 8"
+                            :rows="items.per_page || 6"
                             :total-records="items.total || 0"
-                            :first="((currentPage || 1) - 1) * (items.per_page || 8)"
+                            :first="((currentPage || 1) - 1) * (items.per_page || 6)"
                             template="PrevPageLink CurrentPageReport NextPageLink"
                             current-page-report-template="Page {currentPage} of {totalPages}"
                             @page="goToPage($event.page + 1)"
                         />
-
-                        <div v-if="paginatedItems.length === 0 && !isLoadingItems" class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-                            </svg>
-                            <h3 class="mt-3 text-lg font-semibold text-slate-700">No matching items</h3>
-                            <p class="mt-1 text-sm text-slate-500">Try adjusting your search or category filter.</p>
-                        </div>
                     </section>
 
                     <CurrentSalePanel
@@ -763,15 +801,41 @@ onMounted(() => {
                         :cartItemCount="cartItemCount"
                         :cartTotal="cartTotal"
                         :grandTotal="grandTotal"
+                        :visible="showSalePanel"
                         :formatMoney="formatMoney"
                         :toNumber="toNumber"
                         @remove="removeFromCart"
                         @updateQty="updateQuantity"
                         @checkout="processCheckout"
                         @clear="clearCart"
+                        @close="showSalePanel = false"
                     />
                 </section>
             </main>
+
+            <!-- Desktop-only tab to bring the hidden Current sale panel back -->
+            <Transition name="sale-tab">
+                <button
+                    v-if="!showSalePanel"
+                    type="button"
+                    aria-label="Show current sale"
+                    title="Show current sale"
+                    class="fixed right-0 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-2.5 rounded-l-2xl border border-r-0 border-[var(--border-subtle)] bg-[var(--surface-panel)] py-4 pl-3 pr-2.5 shadow-[0_18px_55px_rgba(28,25,23,0.16)] transition hover:bg-[var(--surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--pos-primary)] xl:flex"
+                    @click="showSalePanel = true"
+                >
+                    <span class="pi pi-angle-double-left text-sm text-[var(--pos-primary)]"></span>
+                    <span class="relative inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--pos-primary)] text-white shadow-lg shadow-[var(--pos-primary)]/30">
+                        <span class="pi pi-shopping-cart text-sm"></span>
+                        <span
+                            v-if="cartItemCount > 0"
+                            class="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-yellow-300 px-1 text-[10px] font-bold text-slate-900 ring-2 ring-[var(--surface-panel)]"
+                        >
+                            {{ cartItemCount }}
+                        </span>
+                    </span>
+                    <span class="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)] [writing-mode:vertical-rl]">Current sale</span>
+                </button>
+            </Transition>
 
             <CartDrawer
                 :open="showCart"
@@ -834,6 +898,87 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Animate the right track 340px <-> 0px; because it's the last track the
+   fixed-width panel content slides off the right edge as products reflow wider. */
+@media (min-width: 1280px) {
+    .pos-grid {
+        grid-template-columns: 200px minmax(0, 1fr) var(--sale-col, 340px);
+        transition: grid-template-columns 440ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+}
+
+.sale-tab-enter-active,
+.sale-tab-leave-active {
+    transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease;
+}
+
+.sale-tab-enter-from,
+.sale-tab-leave-to {
+    transform: translate(100%, -50%);
+    opacity: 0;
+}
+
+/* Product cards fade-up in, staggered, when the category/page changes (and on first load). */
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-enter-active {
+    animation: card-in 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.card-enter-active:nth-child(2) { animation-delay: 45ms; }
+.card-enter-active:nth-child(3) { animation-delay: 90ms; }
+.card-enter-active:nth-child(4) { animation-delay: 135ms; }
+.card-enter-active:nth-child(5) { animation-delay: 180ms; }
+.card-enter-active:nth-child(6) { animation-delay: 225ms; }
+.card-enter-active:nth-child(7) { animation-delay: 270ms; }
+.card-enter-active:nth-child(8) { animation-delay: 315ms; }
+.card-enter-active:nth-child(n + 9) { animation-delay: 360ms; }
+
+/* Category label swap */
+.cat-label-enter-active,
+.cat-label-leave-active {
+    transition: opacity 220ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cat-label-enter-from {
+    opacity: 0;
+    transform: translateY(7px);
+}
+
+.cat-label-leave-to {
+    opacity: 0;
+    transform: translateY(-7px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pos-grid {
+        transition: none;
+    }
+
+    .sale-tab-enter-active,
+    .sale-tab-leave-active {
+        transition: none;
+    }
+
+    .card-enter-active {
+        animation: none;
+    }
+
+    .cat-label-enter-active,
+    .cat-label-leave-active {
+        transition: none;
+    }
+}
+
 .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

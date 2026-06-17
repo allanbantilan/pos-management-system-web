@@ -46,7 +46,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 20,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000001',
-                'image' => 'https://placehold.co/900x700/png?text=Classic+Cheeseburger',
+                'image' => 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=900&h=700&fit=crop&q=80',
                 'description' => 'Beef patty, cheese, lettuce, and house sauce.',
             ],
             [
@@ -59,7 +59,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 15,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000002',
-                'image' => 'https://placehold.co/900x700/png?text=Double+BBQ+Burger',
+                'image' => 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=900&h=700&fit=crop&q=80',
                 'description' => 'Double beef patties with smoky BBQ glaze.',
             ],
             [
@@ -72,7 +72,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 12,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000003',
-                'image' => 'https://placehold.co/900x700/png?text=2pc+Crispy+Chicken',
+                'image' => 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=900&h=700&fit=crop&q=80',
                 'description' => 'Two-piece fried chicken with gravy.',
             ],
             [
@@ -85,7 +85,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 10,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000004',
-                'image' => 'https://placehold.co/900x700/png?text=Spicy+Chicken+Sandwich',
+                'image' => 'https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=900&h=700&fit=crop&q=80',
                 'description' => 'Crispy spicy chicken fillet with mayo.',
             ],
             [
@@ -98,7 +98,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 30,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000005',
-                'image' => 'https://placehold.co/900x700/png?text=Regular+Fries',
+                'image' => 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=900&h=700&fit=crop&q=80',
                 'description' => 'Golden crispy fries.',
             ],
             [
@@ -111,7 +111,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 20,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000006',
-                'image' => 'https://placehold.co/900x700/png?text=Onion+Rings',
+                'image' => 'https://images.unsplash.com/photo-1639024471283-03518883512d?w=900&h=700&fit=crop&q=80',
                 'description' => 'Crispy battered onion rings.',
             ],
             [
@@ -124,7 +124,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 25,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000007',
-                'image' => 'https://placehold.co/900x700/png?text=Iced+Tea',
+                'image' => 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=900&h=700&fit=crop&q=80',
                 'description' => 'Fresh brewed sweet iced tea.',
             ],
             [
@@ -137,7 +137,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 25,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000008',
-                'image' => 'https://placehold.co/900x700/png?text=Cola+22oz',
+                'image' => 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=900&h=700&fit=crop&q=80',
                 'description' => 'Cold sparkling cola drink.',
             ],
             [
@@ -150,7 +150,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 15,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000009',
-                'image' => 'https://placehold.co/900x700/png?text=Sundae+Cup',
+                'image' => 'https://images.unsplash.com/photo-1563805042-7684c019e1cb?w=900&h=700&fit=crop&q=80',
                 'description' => 'Vanilla sundae with chocolate topping.',
             ],
             [
@@ -163,7 +163,7 @@ class PosCatalogSeeder extends Seeder
                 'min_stock' => 15,
                 'unit' => ItemUnit::Piece->value,
                 'barcode' => '100000000010',
-                'image' => 'https://placehold.co/900x700/png?text=Apple+Pie',
+                'image' => 'https://images.unsplash.com/photo-1535920527002-b35e96722eb9?w=900&h=700&fit=crop&q=80',
                 'description' => 'Warm pastry filled with apple cinnamon.',
             ],
         ];
