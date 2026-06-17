@@ -21,14 +21,17 @@ class UserWelcomeWidget extends Widget
         return (string) (Filament::auth()->user()?->name ?? 'there');
     }
 
-    public function welcomeRole(): string
+    /**
+     * @return array<int, string>
+     */
+    public function welcomeRoles(): array
     {
         $user = Filament::auth()->user();
 
         $roles = ($user && method_exists($user, 'getRoleNames'))
-            ? $user->getRoleNames()->implode(', ')
-            : '';
+            ? $user->getRoleNames()->all()
+            : [];
 
-        return $roles !== '' ? $roles : 'No role assigned';
+        return $roles !== [] ? $roles : ['No role assigned'];
     }
 }
