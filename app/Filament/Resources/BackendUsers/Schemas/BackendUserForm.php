@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\BackendUsers\Schemas;
 
-use App\Models\BackendUser;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -42,8 +41,7 @@ class BackendUserForm
                     // Only super admins may change role assignments. For anyone
                     // else this field is read-only, preventing self-escalation
                     // (e.g. attaching the backend-admin role to their own account).
-                    ->disabled(fn (): bool => ! (Auth::guard('backend')->user() instanceof BackendUser
-                        && Auth::guard('backend')->user()->hasRole('backend-admin'))),
+                    ->disabled(fn (): bool => ! (Auth::guard('backend')->user()?->isSuperAdmin() ?? false)),
             ]);
     }
 }

@@ -42,6 +42,11 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Backend super-admin bypass: a backend-admin passes every ability
+        // check (policies + panel access). Return null otherwise so normal
+        // policy checks still run for everyone else.
+        Gate::before(fn ($user, string $ability) => ($user instanceof BackendUser && $user->isSuperAdmin()) ? true : null);
+
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(BackendUser::class, BackendUserPolicy::class);
         Gate::policy(PosItem::class, PosItemPolicy::class);

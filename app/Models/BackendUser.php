@@ -67,4 +67,13 @@ class BackendUser extends Authenticatable implements FilamentUser
     {
         return $this->can('can access backend panel');
     }
+
+    /**
+     * Backend super-admin. Single source of truth for "can do everything",
+     * used by the Gate::before bypass and the backend-user role field.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('backend-admin');
+    }
 }
