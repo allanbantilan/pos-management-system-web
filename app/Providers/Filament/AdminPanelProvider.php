@@ -3,7 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Statistics;
-use App\Filament\Widgets\PosOverviewStats;
+use App\Filament\Widgets\DashboardOverviewStats;
 use App\Filament\Widgets\SalesProfitTrendChart;
 use App\Filament\Widgets\TopSellingItemsTable;
 use App\Filament\Widgets\UserWelcomeWidget;
@@ -59,7 +59,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 UserWelcomeWidget::class,
-                PosOverviewStats::class,
+                DashboardOverviewStats::class,
                 SalesProfitTrendChart::class,
                 TopSellingItemsTable::class,
             ])
