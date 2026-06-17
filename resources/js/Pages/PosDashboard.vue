@@ -520,7 +520,7 @@ onMounted(() => {
                 class="pointer-events-none absolute inset-0"
             ></div>
 
-            <Toast position="bottom-right" />
+            <Toast position="bottom-left" />
 
             <header class="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--surface-panel)]/95 backdrop-blur">
                 <div class="mx-auto flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
