@@ -695,8 +695,7 @@ onMounted(() => {
                     <section class="min-w-0">
                         <div class="mb-4 flex items-center justify-between">
                             <div>
-                                <p class="text-[0.68rem] font-bold uppercase tracking-[0.2em] text-[var(--text-secondary)]">Product workspace</p>
-                                <h2 class="font-display mt-1 text-2xl font-bold tracking-tight">
+                                <h2 class="font-display text-2xl font-bold tracking-tight">
                                     <Transition name="cat-label" mode="out-in">
                                         <span :key="selectedCategory" class="inline-block">
                                             {{ selectedCategory === "All" ? "All products" : selectedCategory }}
