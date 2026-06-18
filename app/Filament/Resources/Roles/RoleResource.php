@@ -34,15 +34,14 @@ class RoleResource extends Resource
     protected static ?int $navigationSort = 3;
 
     /**
-     * Role management is restricted to super admins only. This hides the
-     * navigation entry and blocks access to every role page (list/create/edit)
-     * for any other backend user, preventing privilege escalation.
+     * Users with role-view permission may reach the resource. Mutating actions
+     * remain policy-gated to prevent privilege escalation.
      */
     public static function canAccess(): bool
     {
         $user = Auth::guard('backend')->user();
 
-        return $user instanceof BackendUser && $user->hasRole('backend-admin');
+        return $user instanceof BackendUser && $user->can('can view role');
     }
 
     public static function form(Schema $schema): Schema

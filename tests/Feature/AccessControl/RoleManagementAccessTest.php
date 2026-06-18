@@ -28,7 +28,20 @@ class RoleManagementAccessTest extends TestCase
         $this->assertTrue(RoleResource::canAccess());
     }
 
-    public function test_non_super_admin_cannot_access_role_resource(): void
+    public function test_backend_analyst_can_access_role_resource_read_only(): void
+    {
+        $analyst = $this->backendUser('backend-analyst');
+
+        $this->actingAs($analyst, 'backend');
+
+        $this->assertTrue(RoleResource::canAccess());
+        $this->assertTrue($analyst->can('can view role'));
+        $this->assertFalse($analyst->can('can create role'));
+        $this->assertFalse($analyst->can('can update role'));
+        $this->assertFalse($analyst->can('can delete role'));
+    }
+
+    public function test_backend_operator_cannot_access_role_resource(): void
     {
         $this->actingAs($this->backendUser('backend-operator'), 'backend');
 
