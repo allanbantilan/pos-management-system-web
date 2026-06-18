@@ -19,6 +19,7 @@ use App\Policies\RolePolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Role;
