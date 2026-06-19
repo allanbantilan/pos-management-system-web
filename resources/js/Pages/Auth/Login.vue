@@ -36,7 +36,7 @@ const submit = () => {
             <div class="mb-8">
                 <p class="text-xs font-bold uppercase tracking-[0.22em] text-[var(--brand-primary)]">Secure access</p>
                 <h2 class="font-display mt-2 text-4xl font-bold tracking-tight text-[var(--text-primary)]">Open your register</h2>
-                <p class="mt-2 text-sm text-[var(--text-secondary)]">Sign in to start processing sales and managing your shift.</p>
+                <p class="mt-2 text-sm text-[var(--text-secondary)]">Sign in to start processing sales.</p>
             </div>
 
             <Message v-if="status" severity="success" class="mb-5">{{ status }}</Message>
@@ -73,17 +73,17 @@ const submit = () => {
                         </Link>
                     </div>
                     <Password
-                            id="password"
-                            v-model="form.password"
-                            required
-                            autocomplete="current-password"
-                            placeholder="Enter your password"
-                            fluid
-                            toggle-mask
-                            :feedback="false"
-                            input-class="w-full"
-                            :invalid="Boolean(form.errors.password)"
-                        />
+                        id="password"
+                        v-model="form.password"
+                        required
+                        autocomplete="current-password"
+                        placeholder="Enter your password"
+                        fluid
+                        toggle-mask
+                        :feedback="false"
+                        input-class="w-full"
+                        :invalid="Boolean(form.errors.password)"
+                    />
                     <p v-if="form.errors.password" class="mt-2 text-sm text-rose-600">
                         {{ form.errors.password }}
                     </p>
@@ -100,7 +100,7 @@ const submit = () => {
                     icon="pi pi-arrow-right"
                     icon-pos="right"
                     size="large"
-                    class="w-full"
+                    class="w-full !rounded-xl !border-0 !bg-[var(--brand-primary)] !py-3.5 !font-bold !text-white !shadow-lg !shadow-[var(--brand-primary)]/30 !transition hover:!bg-[var(--brand-primary-hover)] hover:!shadow-xl active:!scale-[0.99] focus:!ring-2 focus:!ring-[var(--brand-primary)] focus:!ring-offset-2"
                     :loading="form.processing"
                 />
             </form>
