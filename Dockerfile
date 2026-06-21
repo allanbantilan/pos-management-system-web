@@ -47,6 +47,12 @@ RUN apt-get update \
         bcmath \
     && rm -rf /var/lib/apt/lists/*
 
+# Fail the build if a required extension is missing, so an env/build drift can't
+# silently ship an image that breaks checkout (bcmath powers the money math).
+RUN for ext in bcmath pdo_mysql mbstring intl gd; do \
+        php -m | grep -qi "^${ext}$" || { echo "FATAL: required PHP extension '${ext}' is missing"; exit 1; }; \
+    done
+
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www

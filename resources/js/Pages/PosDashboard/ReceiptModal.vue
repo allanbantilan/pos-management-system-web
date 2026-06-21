@@ -1,5 +1,4 @@
 <script setup>
-import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Tag from "primevue/tag";
 
@@ -10,6 +9,11 @@ defineProps({
 });
 
 const emit = defineEmits(["close", "print"]);
+
+// Filled brand CTA, matching the payment dialog footers. Anchored to --brand-primary
+// so it renders inside PrimeVue's teleported dialog and stays theme-reactive.
+const primaryBtnClass =
+    "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--brand-primary)]/30 transition duration-150 hover:bg-[var(--brand-primary-hover)] hover:shadow-xl active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base,#fff)]";
 </script>
 
 <template>
@@ -63,7 +67,10 @@ const emit = defineEmits(["close", "print"]);
         </template>
 
         <template #footer>
-            <Button label="Start next sale" icon="pi pi-check" @click="emit('close')" />
+            <button type="button" :class="primaryBtnClass" @click="emit('close')">
+                <span class="pi pi-check text-sm"></span>
+                Start next sale
+            </button>
         </template>
     </Dialog>
 </template>

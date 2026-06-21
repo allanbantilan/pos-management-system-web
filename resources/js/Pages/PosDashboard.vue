@@ -482,11 +482,30 @@ const completeCheckout = async (cashMeta = null) => {
 
         showToastMessage("Checkout initialized", "success");
     } catch (error) {
-        const message = error?.response?.data?.message || error?.response?.data?.errors?.payment_method?.[0];
-        showToastMessage(message || "Checkout failed", "danger");
+        showToastMessage(checkoutErrorMessage(error), "danger");
     } finally {
         isProcessingCheckout.value = false;
     }
+};
+
+// Turn a checkout failure into something a cashier can act on, instead of a raw
+// "Server Error". Validation problems (422) are the customer's/cart's to fix and
+// are surfaced verbatim; everything else reassures that no payment was taken.
+const checkoutErrorMessage = (error) => {
+    const response = error?.response;
+
+    if (!response) {
+        return "Can't reach the server. Check your connection and try again — no payment was taken.";
+    }
+
+    if (response.status === 422) {
+        const errors = response.data?.errors;
+        const firstError = errors ? Object.values(errors)?.[0]?.[0] : null;
+
+        return firstError || response.data?.message || "Please review the sale details and try again.";
+    }
+
+    return "Something went wrong and the sale was not completed. No payment was taken — please try again or use another payment method.";
 };
 
 onMounted(() => {

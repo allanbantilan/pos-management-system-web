@@ -1,5 +1,4 @@
 <script setup>
-import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
 import Message from "primevue/message";
@@ -25,6 +24,10 @@ const outlineBtnClass =
     "inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition duration-150 hover:border-[var(--brand-primary)] hover:bg-[var(--surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]";
 const dangerGhostBtnClass =
     "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] transition duration-150 hover:bg-[var(--status-danger)]/10 hover:text-[var(--status-danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-danger)]/40";
+// Neutral bordered keys for the numeric pad + quick amounts: clearly visible on the
+// dialog surface (the old PrimeVue outline rendered nearly invisible there), brand hover.
+const keypadBtnClass =
+    "inline-flex items-center justify-center rounded-xl border border-[var(--border-subtle)] font-semibold text-[var(--text-primary)] transition duration-150 hover:border-[var(--brand-primary)] hover:bg-[var(--surface-muted)] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]";
 </script>
 
 <template>
@@ -62,27 +65,28 @@ const dangerGhostBtnClass =
         />
 
         <div class="mt-3 grid grid-cols-3 gap-2">
-            <Button
+            <button
                 v-for="amount in [grandTotal, 500, 1000]"
                 :key="`quick-${amount}`"
-                :label="amount === grandTotal ? 'Exact' : formatMoney(amount)"
-                severity="secondary"
-                outlined
-                size="small"
+                type="button"
+                :class="[keypadBtnClass, 'py-2 text-sm']"
                 @click="emit('setQuick', amount)"
-            />
+            >
+                {{ amount === grandTotal ? "Exact" : formatMoney(amount) }}
+            </button>
         </div>
 
         <div class="mt-3 grid grid-cols-3 gap-2">
-            <Button
+            <button
                 v-for="key in ['7', '8', '9', '4', '5', '6', '1', '2', '3', '.', '0', '⌫']"
                 :key="`cash-key-${key}`"
-                :label="key"
-                severity="secondary"
-                outlined
-                class="!h-11"
+                type="button"
+                :class="[keypadBtnClass, 'h-11 text-base']"
+                :aria-label="key === '⌫' ? 'Backspace' : key"
                 @click="key === '⌫' ? emit('backspace') : emit('append', key)"
-            />
+            >
+                {{ key }}
+            </button>
         </div>
 
         <Message v-if="cashCalculatorError" severity="error" class="mt-3">{{ cashCalculatorError }}</Message>
