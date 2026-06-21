@@ -44,6 +44,7 @@ RUN apt-get update \
         pcntl \
         gd \
         intl \
+        bcmath \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
