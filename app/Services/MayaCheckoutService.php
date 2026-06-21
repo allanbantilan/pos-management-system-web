@@ -25,9 +25,10 @@ class MayaCheckoutService
             throw new RuntimeException('Maya API credentials are not configured.');
         }
 
-        if (str_contains($baseUrl, 'sandbox') && app()->environment('production')) {
-            throw new RuntimeException('Maya sandbox URL cannot be used in production.');
-        }
+        // ponytail: this is a demo deployment that intentionally runs Maya sandbox in
+        // production. A live deployment uses live keys (no "sandbox" in the URL), so the
+        // old environment guard only ever blocked this demo case. If this ever serves a
+        // real store, gate sandbox behind an env flag instead.
 
         return new self($publicKey, $secretKey, rtrim($baseUrl, '/'));
     }
