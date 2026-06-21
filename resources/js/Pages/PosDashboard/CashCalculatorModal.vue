@@ -16,6 +16,15 @@ defineProps({
 });
 
 const emit = defineEmits(["close", "clear", "back", "confirm", "append", "backspace", "setQuick"]);
+
+// Shared button vocabulary (see CheckoutDialog.vue). Anchored to --brand-primary so it
+// renders correctly inside PrimeVue's teleported dialog and stays theme-reactive.
+const primaryBtnClass =
+    "inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--brand-primary)]/30 transition duration-150 hover:bg-[var(--brand-primary-hover)] hover:shadow-xl active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base,#fff)] disabled:cursor-not-allowed disabled:bg-[var(--border-subtle)] disabled:text-[var(--text-secondary)] disabled:shadow-none disabled:active:scale-100";
+const outlineBtnClass =
+    "inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition duration-150 hover:border-[var(--brand-primary)] hover:bg-[var(--surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]";
+const dangerGhostBtnClass =
+    "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] transition duration-150 hover:bg-[var(--status-danger)]/10 hover:text-[var(--status-danger)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-danger)]/40";
 </script>
 
 <template>
@@ -79,15 +88,21 @@ const emit = defineEmits(["close", "clear", "back", "confirm", "append", "backsp
         <Message v-if="cashCalculatorError" severity="error" class="mt-3">{{ cashCalculatorError }}</Message>
 
         <template #footer>
-            <Button label="Clear" severity="secondary" text @click="emit('clear')" />
-            <Button label="Back" severity="secondary" outlined @click="emit('back')" />
-            <Button
-                label="Complete sale"
-                icon="pi pi-check"
-                :loading="isProcessing"
-                :disabled="!isCashSufficient"
-                @click="emit('confirm')"
-            />
+            <div class="flex items-center gap-2">
+                <button type="button" :class="dangerGhostBtnClass" :disabled="isProcessing" @click="emit('clear')">
+                    <span class="pi pi-times text-xs"></span>
+                    Clear
+                </button>
+                <button type="button" :class="[outlineBtnClass, 'ml-auto']" :disabled="isProcessing" @click="emit('back')">
+                    <span class="pi pi-arrow-left text-xs"></span>
+                    Back
+                </button>
+                <button type="button" :class="primaryBtnClass" :disabled="!isCashSufficient || isProcessing" @click="emit('confirm')">
+                    <span v-if="isProcessing" class="pi pi-spin pi-spinner text-sm"></span>
+                    <span v-else class="pi pi-check text-sm"></span>
+                    Complete sale
+                </button>
+            </div>
         </template>
     </Dialog>
 </template>

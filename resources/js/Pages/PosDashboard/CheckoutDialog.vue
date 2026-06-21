@@ -1,5 +1,4 @@
 <script setup>
-import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import RadioButton from "primevue/radiobutton";
 
@@ -12,6 +11,14 @@ defineProps({
 });
 
 const emit = defineEmits(["close", "proceed", "update:selectedPaymentMethod"]);
+
+// Shared button vocabulary. Anchored to --brand-primary (document-root, theme-reactive)
+// rather than --pos-primary, which is scoped to the dashboard and unavailable inside
+// PrimeVue's teleported dialog. Matches the native "Charge order" button elsewhere.
+const primaryBtnClass =
+    "inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[var(--brand-primary)]/30 transition duration-150 hover:bg-[var(--brand-primary-hover)] hover:shadow-xl active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base,#fff)] disabled:cursor-not-allowed disabled:bg-[var(--border-subtle)] disabled:text-[var(--text-secondary)] disabled:shadow-none disabled:active:scale-100";
+const ghostBtnClass =
+    "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-[var(--text-secondary)] transition duration-150 hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-subtle)]";
 
 const methods = [
     {
@@ -68,14 +75,14 @@ const methods = [
         </div>
 
         <template #footer>
-            <Button label="Cancel" severity="secondary" text @click="emit('close')" />
-            <Button
-                :label="selectedPaymentMethod === 'cash' ? 'Continue to cash' : 'Pay with Maya'"
-                icon="pi pi-arrow-right"
-                icon-pos="right"
-                :loading="isProcessing"
-                @click="emit('proceed')"
-            />
+            <div class="flex items-center justify-end gap-2">
+                <button type="button" :class="ghostBtnClass" :disabled="isProcessing" @click="emit('close')">Cancel</button>
+                <button type="button" :class="primaryBtnClass" :disabled="isProcessing" @click="emit('proceed')">
+                    <span v-if="isProcessing" class="pi pi-spin pi-spinner text-sm"></span>
+                    {{ selectedPaymentMethod === "cash" ? "Continue to cash" : "Pay with Maya" }}
+                    <span v-if="!isProcessing" class="pi pi-arrow-right text-sm"></span>
+                </button>
+            </div>
         </template>
     </Dialog>
 </template>
