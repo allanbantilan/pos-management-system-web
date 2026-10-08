@@ -9,7 +9,7 @@ The app is built as a modern Laravel + Vue/Inertia application: Laravel owns aut
 
 ## Demo Login Credentials
 
-Use these seeded accounts to explore the [live demo](https://posmanagement.duckdns.org). Both share the same password, and neither can delete seeded demo data.
+Use these seeded accounts to explore the [live demo](https://posmanagement.duckdns.org). All share the same password.
 
 **Password:** `Hello123!`
 
@@ -23,11 +23,12 @@ Browse items, build carts, and process cash or Maya Checkout sales.
 
 ### Admin back office — https://posmanagement.duckdns.org/admin
 
-| Role | Email |
-| --- | --- |
-| Backend Analyst (read-only) | `backend-analyst@test.com` |
+| Role | Email | Access |
+| --- | --- | --- |
+| Backend Admin | `backend-admin@test.com` | Full — create, update, delete, settings |
+| Backend Analyst | `backend-analyst@test.com` | Read-only — view + export, no changes |
 
-Read-only: view dashboards, catalog, users, roles, audit logs, and export reports. No create, update, or delete.
+Use **Backend Analyst** for a safe look-around (no changes possible). **Backend Admin** has full control, including delete — avoid wiping seeded demo data.
 
 > Demo data only. Payments run against the Maya sandbox — use [Maya mock cards](https://developers.maya.ph/page/full-list-of-mock-cards) for test checkout.
 
